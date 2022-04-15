@@ -8,7 +8,7 @@ Modifications and additions to the vanilla app are found in:
   * src
     * index.js: defines the top-level Redux reducer.
     * App.js: imports CSS resources and defines the application entry point and routes.
-    * core-lib: general Lionsoft libraries for use in building React apps.
+    * core-lib: general libraries for use in building React apps.
       * apis: code for acting as an HXR client.
       * auth: authentication and authorization.
       * routing: code related to react-router and overall page navigation.
