@@ -1,0 +1,30 @@
+{
+  "name": "wgs-web-client",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "classnames": "^2.2.6",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "react-redux": "^7.1.0",
+    "react-router": "^5.0.1",
+    "react-router-dom": "^5.0.1",
+    "react-scripts": "3.0.1",
+    "react-style-proptype": "^3.2.2",
+    "recompose": "^0.30.0",
+    "redux": "^4.0.1",
+    "redux-form": "^8.2.4",
+    "universal-cookie": "^4.0.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "build": "react-scripts build",
+    "postbuild": "rm -rf ../WGSAppServer/web-client-build/*; cp -R build/* ../WGSAppServer/web-client-build/"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": []
+}

@@ -1,0 +1,13 @@
+nav {
+  color:initial;
+  background-color:initial;
+  box-shadow: none;
+}
+
+.collapsible.popout>li .collapsible.popout>li { /* better nesting */
+  margin: 0 0;
+}
+
+[type="checkbox"]+span:not(.lever) { /* override weird materialize.css choice */
+  height: 1em !important;
+}
