@@ -49,7 +49,6 @@ Navlink.propTypes = {
 }
 
 const AppPageWithNav = ({title, search, routes, user, authenticator, children}) => {
-  console.log('XXXAPWN', {authenticator})
   const Navlinks = useMemo(()=>(
     <React.Fragment>
       {routes.map(({path, exact, title})=>(

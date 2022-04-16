@@ -4,8 +4,6 @@ import PropTypes from 'prop-types'
 import {useSelector} from 'react-redux'
 import {compose} from 'recompose'
 
-import {useAuthenticator} from './hooks.jsx'
-
 //import {A} from '../../utils/components.jsx'
 import {Button, Icon, Error} from '../../ui/components.jsx'
 //import {InputWrapper} from '../../ui/forms/components.jsx'

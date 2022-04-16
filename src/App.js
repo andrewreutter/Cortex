@@ -2,13 +2,14 @@ import './App.css';
 import './core-lib/ui/css/materialize.min.css'
 import './core-lib/ui/css/material-icons.css'
 
-import React, {useMemo} from 'react'
+import React from 'react'
+//import {useMemo} from 'react'
 import { initializeApp } from 'firebase/app';
 
 import {AppWithNav} from './core-lib/routing/components.jsx'
 import {LoremIpsum} from './core-lib/utils/components.jsx'
 
-import {useAuthenticator, useSignOut} from './core-lib/firebase/auth/hooks.jsx'
+import {useAuthenticator} from './core-lib/firebase/auth/hooks.jsx'
 
 import {UsersRoute} from './features/users/components.jsx'
 import {ProjectsRoute} from './features/projects/components.jsx'
