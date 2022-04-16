@@ -1,6 +1,8 @@
 import {useMemo} from 'react'
 import {SubmissionError} from 'redux-form'
 import Cookies from 'universal-cookie';
+//import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 import {useFetch, useFetches} from '../../core-lib/fetch/hooks.jsx'
 

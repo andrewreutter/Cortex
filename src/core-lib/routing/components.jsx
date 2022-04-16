@@ -9,7 +9,7 @@ import {user} from '../auth/proptypes.jsx'
 import {addsProps, removesProps, addsChildren, fragmentUnless, addsStyle, addsClassNames} from '../utils/higher-order.jsx'
 // import {logsRender} from '../utils/higher-order.jsx'
 import {Div, UL, LI, A} from '../utils/components.jsx'
-import {SignInForm} from '../auth/components.jsx'
+import {SignInForm} from '../firebase/auth/components.jsx'
 import {SearchForm} from '../search/components.jsx'
 import {Responsive, CenteredBody} from '../ui/layout/components.jsx'
 import {responsiveProps} from '../ui/layout/higher-order.jsx'
@@ -320,19 +320,19 @@ let PageWithNav
 /*  AppWithNav is an entire app, as defined by routes and auth data that can be loaded in.
 
     Props:
-    - fetch, ready, error: as useFetches() from the fetch module.
+    - authenticator: an implementation of the Authenticator interface. XXX document Authenticator interface.
+    - fetch: as useFetches() from the fetch module.
       Remaining props may be null until ready is true.
-    - isAuthenticated: boolean
-    - user: object matching our custom proptype
     - routes: array of routes that the user is authorized to use.
-    - useSignIn: hook function(username, password) => fn() that signs you in
     - signOut(): function
 */
 const AppWithNav = ({
-    fetch, ready, error, isAuthenticated, user, routes,
-    signOut, useSignIn,
-}) => (
-  !ready
+  authenticator,
+  fetch, routes,
+  signOut,
+}) => {
+  const {ready, error, isAuthenticated, user} = authenticator.auth();
+  return !ready
     ? <CenteredBody><Spinner size="big"/></CenteredBody>
     : (
       error
@@ -341,27 +341,22 @@ const AppWithNav = ({
         isAuthenticated
         ? <RoutingApp {...{routes, user, signOut}}/>
         : <Responsive
-            Mobile={()=><SignInForm {...{useSignIn}} style={{margin:'4rem auto'}}/>}
+            Mobile={()=><SignInForm {...{authenticator}} style={{margin:'4rem auto'}}/>}
             Desktop={()=>(
               <CenteredBody>
-                <SignInForm {...{useSignIn}}/>
+                <SignInForm {...{authenticator}}/>
               </CenteredBody>
             )}
           >
           </Responsive>
       )
     )
-)
+}
 AppWithNav.propTypes = {
+  authenticator: PropTypes.shape({
+  }).isRequired,
   fetch: PropTypes.func.isRequired,
-  ready: PropTypes.bool.isRequired,
-  error: PropTypes.shape({
-    message: PropTypes.string.isRequired,
-  }),
-  isAuthenticated: PropTypes.bool.isRequired,
   routes: PropTypes.arrayOf(route).isRequired,
-  user: user,
-  useSignIn: PropTypes.func.isRequired, // (username, password) => fn() hook
   signOut: PropTypes.func.isRequired, // signOut
 }
 

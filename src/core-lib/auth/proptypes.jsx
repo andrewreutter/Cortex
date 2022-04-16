@@ -1,8 +1,10 @@
 import PropTypes from 'prop-types'
 
 const user = PropTypes.shape({
-  username: PropTypes.string.isRequired,
-  fullname: PropTypes.string.isRequired,
+  uid: PropTypes.string.isRequired,
+  displayName: PropTypes.string.isRequired,
+  email: PropTypes.string.isRequired,
+  photoURL: PropTypes.string.isRequired,
 })
 
 export {user}
