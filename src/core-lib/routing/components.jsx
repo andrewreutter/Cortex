@@ -48,7 +48,8 @@ Navlink.propTypes = {
   children: PropTypes.element.isRequired,
 }
 
-const AppPageWithNav = ({title, search, routes, user, signOut, children}) => {
+const AppPageWithNav = ({title, search, routes, user, authenticator, children}) => {
+  console.log('XXXAPWN', {authenticator})
   const Navlinks = useMemo(()=>(
     <React.Fragment>
       {routes.map(({path, exact, title})=>(
@@ -63,10 +64,10 @@ const AppPageWithNav = ({title, search, routes, user, signOut, children}) => {
         <Link to="." className="truncate" style={{fontSize:'1.6em'}}>{user.fullname}</Link>
       </Navlink>
       <Navlink style={{position:'fixed', bottom:0, width:'100%'}}>
-        <Link to="." onClick={signOut}>Sign out</Link>
+        <Link to="." onClick={authenticator.signOut}>Sign out</Link>
       </Navlink>
     </React.Fragment>
-  ), [routes, user, signOut])
+  ), [routes, user, authenticator])
   return <PageWithNav {...{search, title, children, Navlinks}}/>
 }
 AppPageWithNav.propTypes = {
@@ -75,13 +76,15 @@ AppPageWithNav.propTypes = {
   children: PropTypes.node.isRequired,
   routes: PropTypes.arrayOf(route).isRequired,
   user: user.isRequired,
-  signOut: PropTypes.func.isRequired, // must be callable with no arguments.
+  //authenticator: PropTypes.shape({
+    //signOut: PropTypes.fn.isRequired, // must be callable with no arguments.
+  //}).isRequired,
 }
 
 /*  RoutingApp is a <Router> for overall page routing for clients that have already
     authenticated a user and determined what routes they are authorized for.
 */
-const RoutingApp = ({routes, user, signOut}) => {
+const RoutingApp = ({routes, user, authenticator}) => {
 
   /*  If we define a route component inline, e.g.: <Route component={()=><Thing/>}/>,
       then the route component is different on every render and will always get re-rendered
@@ -93,12 +96,12 @@ const RoutingApp = ({routes, user, signOut}) => {
       ({path, exact, title, search, Component})=>{
         let cached = null
         const PageComponent = () => (cached = cached ? cached : (
-          <AppPageWithNav {...{title, search, routes, user, signOut}}><Component/></AppPageWithNav>
+          <AppPageWithNav {...{title, search, routes, user, authenticator}}><Component/></AppPageWithNav>
         ))
         return {path, exact, PageComponent}
       }
     )
-  }, [routes, user, signOut])
+  }, [routes, user, authenticator])
 
   /*  Like PageWithNav, but fills in the Navlinks prop from RouteingApp props.
   */
@@ -122,7 +125,9 @@ const RoutingApp = ({routes, user, signOut}) => {
 RoutingApp.propTypes = {
   routes: PropTypes.arrayOf(route).isRequired,
   user: user.isRequired,
-  signOut: PropTypes.func.isRequired, // must be callable with no arguments.
+  //authenticator: PropTypes.shape({
+    //signOut: PropTypes.fn.isRequired,
+  //}).isRequired, // must be callable with no arguments.
 }
 
 let Navbar;
@@ -324,12 +329,10 @@ let PageWithNav
     - fetch: as useFetches() from the fetch module.
       Remaining props may be null until ready is true.
     - routes: array of routes that the user is authorized to use.
-    - signOut(): function
 */
 const AppWithNav = ({
   authenticator,
   fetch, routes,
-  signOut,
 }) => {
   const {ready, error, isAuthenticated, user} = authenticator.auth();
   return !ready
@@ -339,7 +342,7 @@ const AppWithNav = ({
       ? <CenteredBody><Error onClick={()=>fetch()}>{error.message}: click to try again</Error></CenteredBody>
       : (
         isAuthenticated
-        ? <RoutingApp {...{routes, user, signOut}}/>
+        ? <RoutingApp {...{routes, user, authenticator}}/>
         : <Responsive
             Mobile={()=><SignInForm {...{authenticator}} style={{margin:'4rem auto'}}/>}
             Desktop={()=>(
@@ -357,7 +360,6 @@ AppWithNav.propTypes = {
   }).isRequired,
   fetch: PropTypes.func.isRequired,
   routes: PropTypes.arrayOf(route).isRequired,
-  signOut: PropTypes.func.isRequired, // signOut
 }
 
 export {ScrollToTop, RoutingApp, PageWithNav, AppWithNav}

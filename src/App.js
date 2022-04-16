@@ -8,7 +8,7 @@ import { initializeApp } from 'firebase/app';
 import {AppWithNav} from './core-lib/routing/components.jsx'
 import {LoremIpsum} from './core-lib/utils/components.jsx'
 
-import {useAuth, useAuthenticator, useSignIn, useSignInWith, useSignOut} from './core-lib/firebase/auth/hooks.jsx'
+import {useAuthenticator, useSignOut} from './core-lib/firebase/auth/hooks.jsx'
 
 import {UsersRoute} from './features/users/components.jsx'
 import {ProjectsRoute} from './features/projects/components.jsx'
@@ -42,9 +42,6 @@ const ROUTES = [
 ]
 const App = () => {
   const authenticator = useAuthenticator(firebaseApp);
-  const auth = useAuth(firebaseApp);
-  const signOut = useSignOut();
-  const signInWith = useSignInWith;
   /*
   const authorizedRoutes = useMemo(
     () => {
@@ -53,7 +50,7 @@ const App = () => {
     [routes],
   )
   */
-  return <AppWithNav {...{ authenticator, fetch, routes: ROUTES, signOut }}/>
+  return <AppWithNav {...{ authenticator, fetch, routes: ROUTES }}/>
 }
 
 export default App;

@@ -43,87 +43,10 @@ const useAuthenticator = (firebaseApp) => {
     //debugger;
     return serviceFn();
   }
+  const signOut = () => fbAuth.signOut();
 
   console.log('useAuthenticator', {fbAuth, serviceMap});
-  return {auth, signIn, signInWith}
+  return {auth, signIn, signInWith, signOut}
 }
 
-/*  useAuth(): hook that fetches data about the current user. Returns an object with properties:
-
-    - ready: false until we know whether the user is authenticated.
-    - error: FetchError instance, if any.
-    - isAuthenticated: true if the user is signed in.
-    - user: null if not authenticated; if authenticated, an object with properties:
-      - XXX TODO: figure out what user object looks like.
-                  https://firebase.google.com/docs/reference/js/firebase.User
-      - username: e.g. 'areutter'
-      - fullname: e.g. 'Andrew Reutter'
-*/
-// define outside useAuth() so identity doesn't change and trigger more fetches.
-const useAuth = (firebaseApp) => {
-  const [user, loading, error] = useAuthState(getAuth(firebaseApp));
-  console.log('useAuth', {firebaseApp, user});
-  return {user, ready:!loading, error, isAuthenticated:!!user}
-}
-
-/*  useSignIn(): returns a function signIn(service) for signing the user in.
-    service is one of 'Google', 'Facebook'
-*/
-const useSignIn = (firebaseApp) => {
-  const auth = getAuth(firebaseApp);
-  const {signInWithGoogle} = useSignInWithGoogle(auth);
-  const {signInWithFacebook} = useSignInWithFacebook(auth);
-  const serviceMap = {
-    Google: signInWithGoogle,
-    Facebook: signInWithFacebook,
-  }
-  return (service) => serviceMap[service]();
-}
-
-const useSignInWith = (firebaseApp) => {
-  const auth = getAuth(firebaseApp);
-          onAuthStateChanged(auth, (user) => {
-	      console.log('oASC', {user})
-          });
-  const [signInWithGoogle] = useSignInWithGoogle(auth);
-  const [signInWithFacebook] = useSignInWithFacebook(auth);
-  //console.log('useSignInWith', {auth, signInWithFacebook})
-  const serviceMap = {
-    Google: signInWithGoogle,
-    Facebook: signInWithFacebook,
-  }
-  return (service) => {
-    const serviceFn = serviceMap[service];
-    console.log('useSignInWith.called', {service, serviceMap, serviceFn})
-    const retPromise = serviceFn()
-    retPromise
-      .then((result) => {
-        console.log('SUXXX', {result})
-      })
-      .catch((result) => {
-        console.log('FAILXXX', {result})
-      })
-    return retPromise;
-  }
-}
-
-/*  useSignOut: provides a function() for signing the user out.
-*/
-const SIGN_OUT_FETCH_OPTIONS = {method:'POST'}
-const useSignOut = () => { // TODO AUTH: use new/modified /api/signOut route
-  const {fetch} = useFetch(
-    'https://jsonplaceholder.typicode.com/posts/',
-    SIGN_OUT_FETCH_OPTIONS,
-  )
-  const signOut = useMemo(()=>(
-    () => fetch()
-          .then(()=>{
-            cookies.remove('username', { path: '/' });
-            cookies.remove('fullname', { path: '/' });
-            window.location.reload()
-          })
-  ), [fetch])
-  return signOut
-}
-
-export {useAuth, useSignIn, useSignOut, useSignInWith, useAuthenticator}
+export {useAuthenticator}
