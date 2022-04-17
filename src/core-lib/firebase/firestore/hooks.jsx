@@ -25,7 +25,7 @@ const useCollectionData = (firestore, collectionName) => {
   const [value, loading, error] = fbUseCollectionData(
     collection(firestore, collectionName).withConverter(postConverter)
   )
-  console.log('uCDXXX', {value, firestore, collectionName})
+  //console.log('uCDXXX', {value, firestore, collectionName})
   return {response:value, ready:!loading, fetching:loading, error}
 }
 

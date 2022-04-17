@@ -37,7 +37,7 @@ const useAuthenticator = (firebaseApp) => {
   }
   const signOut = () => fbAuth.signOut();
 
-  console.log('useAuthenticator', {user, fbAuth, serviceMap});
+  //console.log('useAuthenticatorX', {user, fbAuth, serviceMap});
   return {auth, signIn, signInWith, signOut}
 }
 

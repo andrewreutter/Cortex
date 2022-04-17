@@ -99,6 +99,7 @@ SearchHeader.propTypes = {
 */
 const SearchResults = ({
   items, isActive, toggleActive,
+  itemRoutes, // optional; we use a list instead of a 
   searchDisplay:{Body, H1, H2},
   searchOperations:{selectedOperations},
 }) => (
@@ -138,7 +139,7 @@ const defaultFetchOptions = {} // lifted out of SearchInterface to avoid identit
 const WhiteFixFirstChild = props => <FixFirstChild {...props} fixedStyle={{backgroundColor:'white'}}/>
 const SearchInterface = ({
   fixedHeader,
-  searchToUrl,
+  //searchToUrl,
   fetchOptions=defaultFetchOptions,
   searchDisplay,
   searchOperations,

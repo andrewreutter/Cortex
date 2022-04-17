@@ -37,9 +37,9 @@ const HomeRoute = () => ( // TODO LAUNCH: Make a Home route or remove this
 
 const ROUTES = [
   {title:"Home",        path:"/",             exact:true, search:false, Component:HomeRoute},
-  {title:"Users",       path:"/users/",       exact:true, search:true,  Component:UsersRoute},
-  {title:"Projects",    path:"/projects/",    exact:true, search:true,  Component:ProjectsRoute},
-  {title:"Assignments", path:"/assignments/", exact:true, search:true,  Component:AssignmentsRoute},
+  {title:"Games",       path:"/games/",       exact:true, search:true,  Component:UsersRoute},
+  //{title:"Projects",    path:"/projects/",    exact:true, search:true,  Component:ProjectsRoute},
+  //{title:"Assignments", path:"/assignments/", exact:true, search:true,  Component:AssignmentsRoute},
   {title:"Sandbox",     path:"/sandbox/",     exact:true, search:true,  Component:SandboxRoute}, // TODO LAUNCH: remove
 ]
 const App = () => {
