@@ -3,13 +3,12 @@ import { getFirestore, collection } from 'firebase/firestore';
 import { useCollectionData as fbUseCollectionData } from 'react-firebase-hooks/firestore';
 
 const postConverter = {
-  toFirestore(post): DocumentData {
-    return { author: post.author, title: post.title };
-  },
+  toFirestore: item => item.attributes,
   fromFirestore: (snapshot, options) => ({
     attributes: snapshot.data(options),
     id: snapshot.id,
     ref: snapshot.ref,
+    path: snapshot.ref._key.path.segments.slice(snapshot.ref._key.path.offset).join('/')
   }),
 };
 

@@ -140,7 +140,7 @@ const WhiteFixFirstChild = props => <FixFirstChild {...props} fixedStyle={{backg
 const SearchInterface = ({
   fixedHeader,
   //searchToUrl,
-  fetchOptions=defaultFetchOptions,
+  //fetchOptions=defaultFetchOptions,
   searchDisplay,
   searchOperations,
   firestore,
@@ -172,7 +172,7 @@ SearchInterface.defaultProps = {
   fixedHeader: true,
 }
 SearchInterface.propTypes = {
-  fetchOptions: PropTypes.object.isRequired,      // be careful not to change the identity of these options!
+  //fetchOptions: PropTypes.object.isRequired,      // be careful not to change the identity of these options!
   searchDisplay: searchDisplay.isRequired,        // display spec; see proptypes.jsx
   searchOperations: searchOperations.isRequired,  // operations spec; see proptypes.jsx
   fixedHeader: PropTypes.bool.isRequired,         // should the header be fixed?
