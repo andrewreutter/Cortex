@@ -12,10 +12,10 @@ import {useCollectionData} from '../firebase/firestore/hooks.jsx'
 import {Form} from '../utils/components.jsx'
 import {addsStyle} from '../utils/higher-order.jsx'
 
-import {useFetches, useJsonApiResponse} from '../fetch/hooks.jsx'
+//import {useFetches, useJsonApiResponse} from '../fetch/hooks.jsx'
 import {ProgressWhenFetching} from '../fetch/components.jsx'
 
-import {useSearch} from './hooks.jsx'
+//import {useSearch} from './hooks.jsx'
 import {searchDisplay, searchOperations} from './proptypes.jsx'
 
 /*  SearchForm has a single search field available as state.form.searchInNav.search */
