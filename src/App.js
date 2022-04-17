@@ -13,8 +13,8 @@ import {useAuthenticator} from './core-lib/firebase/auth/hooks.jsx'
 import {useFirestore} from './core-lib/firebase/firestore/hooks.jsx'
 
 import {UsersRoute} from './features/users/components.jsx'
-import {ProjectsRoute} from './features/projects/components.jsx'
-import {AssignmentsRoute} from './features/assignments/components.jsx'
+//import {ProjectsRoute} from './features/projects/components.jsx'
+//import {AssignmentsRoute} from './features/assignments/components.jsx'
 import {SandboxRoute} from './features/testpage/components.jsx'
 
 const firebaseConfig = {
