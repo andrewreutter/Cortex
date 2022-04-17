@@ -25,12 +25,7 @@ const userSearchDisplay = {
   ),
   Body: ({item}) => (
     <React.Fragment>
-      <H6 noMargin>Assignments</H6>
-      <AssignmentsSearchInterface
-        fixedHeader={false}
-        searchToUrl={q=>`https://jsonplaceholder.typicode.com/users/?user=${item.id}`}
-        searchDisplay={userAssignmentsSearchDisplay}
-      />
+      <H6 noMargin>Characters</H6>
     </React.Fragment>
   ),
 }
