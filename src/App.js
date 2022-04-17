@@ -10,6 +10,7 @@ import {AppWithNav} from './core-lib/routing/components.jsx'
 import {LoremIpsum} from './core-lib/utils/components.jsx'
 
 import {useAuthenticator} from './core-lib/firebase/auth/hooks.jsx'
+import {useFirestore} from './core-lib/firebase/firestore/hooks.jsx'
 
 import {UsersRoute} from './features/users/components.jsx'
 import {ProjectsRoute} from './features/projects/components.jsx'
@@ -43,6 +44,7 @@ const ROUTES = [
 ]
 const App = () => {
   const authenticator = useAuthenticator(firebaseApp);
+  const firestore = useFirestore(firebaseApp);
   /*
   const authorizedRoutes = useMemo(
     () => {
@@ -51,7 +53,7 @@ const App = () => {
     [routes],
   )
   */
-  return <AppWithNav {...{ authenticator, fetch, routes: ROUTES }}/>
+  return <AppWithNav {...{ authenticator, firestore, routes: ROUTES }}/>
 }
 
 export default App;

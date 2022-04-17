@@ -7,6 +7,7 @@ import {Error, Collapsible, Button} from '../ui/components.jsx'
 import {InputWrapper, Checkbox} from '../ui/forms/components.jsx'
 import {Row, Col, FixFirstChild} from '../ui/layout/components.jsx'
 import {useTracksActive} from '../ui/hooks.jsx'
+import {useCollectionData} from '../firebase/firestore/hooks.jsx'
 
 import {Form} from '../utils/components.jsx'
 import {addsStyle} from '../utils/higher-order.jsx'
@@ -141,16 +142,18 @@ const SearchInterface = ({
   fetchOptions=defaultFetchOptions,
   searchDisplay,
   searchOperations,
+  firestore,
+  collectionName,
 }) => {
-  const {endpoint} = useSearch(searchToUrl)
-  const {fetch, fetching, ready, response, error} = useFetches(endpoint, fetchOptions)
-  const {responseItems:items, responseItemIds:itemIds} = useJsonApiResponse(response)
+  //const {endpoint} = useSearch(searchToUrl)
+  const {fetch, ready, response:items, itemIds, error} = useCollectionData(firestore, collectionName)
+  //const {responseItems:items, responseItemIds:itemIds} = useJsonApiResponse(response)
   const [active, isActive, toggleActive, toggleAll] = useTracksActive()
   const Wrapper = fixedHeader ? WhiteFixFirstChild : React.Fragment
   return (
     <Wrapper>
-      <SearchHeader {...{fetching, searchOperations}}
-        hasData={!!response} hasSelected={!!active.length}
+      <SearchHeader {...{fetching:!ready, searchOperations}}
+        hasData={ready} hasSelected={!!active.length}
         toggleAll={()=>toggleAll(itemIds)}
       />
       { !ready
@@ -168,11 +171,12 @@ SearchInterface.defaultProps = {
   fixedHeader: true,
 }
 SearchInterface.propTypes = {
-  searchToUrl: PropTypes.func.isRequired,         // search => URL, e.g. search => `/api/my?q=${search}`
   fetchOptions: PropTypes.object.isRequired,      // be careful not to change the identity of these options!
   searchDisplay: searchDisplay.isRequired,        // display spec; see proptypes.jsx
   searchOperations: searchOperations.isRequired,  // operations spec; see proptypes.jsx
   fixedHeader: PropTypes.bool.isRequired,         // should the header be fixed?
+  firestore: PropTypes.shape({}).isRequired,      // XXX document or remove
+  collectionName: PropTypes.string.isRequired,    // XXX document
 }
 
 export {SearchForm, SearchInterface}

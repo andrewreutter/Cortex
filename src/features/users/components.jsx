@@ -17,10 +17,10 @@ const userAssignmentsSearchDisplay = {
   ),
 }
 const userSearchDisplay = {
-  H1: ({item}) => <div style={{fontWeight:'bold'}}>{ item.attributes.fullname }</div>,
+  H1: ({item}) => <div style={{fontWeight:'bold'}}>{ item.attributes.name }</div>,
   H2: ({item}) => (
     <React.Fragment>
-      { item.attributes.username } - { item.attributes.roles.join(', ') }
+      { item.attributes.name }
     </React.Fragment>
   ),
   Body: ({item}) => (
@@ -36,9 +36,7 @@ const userSearchDisplay = {
 }
 const userSearchOperations = {
   selectedOperations: [],
-  globalOperations: [
-    {name:'Sync'},
-  ],
+  globalOperations: [],
 }
 const userFetchOptions = {
   delay: 1000, // TODO USERS: remove once connected to real API.
@@ -47,12 +45,13 @@ const userFetchOptions = {
 const UsersRoute = compose(
   // logsRender('UsersRoute XXX'),
 )(
-  () => (
+  ({firestore}) => (
     <SearchInterface
-      searchToUrl={q=>`https://jsonplaceholder.typicode.com/users/?q=${q}`} // TODO USERS: replace UsersRoute.SearchInterface.url with real API
       fetchOptions={userFetchOptions}
       searchDisplay={userSearchDisplay}
       searchOperations={userSearchOperations}
+      firestore={firestore}
+      collectionName="games"
     />
   )
 )

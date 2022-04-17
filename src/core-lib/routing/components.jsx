@@ -83,7 +83,7 @@ AppPageWithNav.propTypes = {
 /*  RoutingApp is a <Router> for overall page routing for clients that have already
     authenticated a user and determined what routes they are authorized for.
 */
-const RoutingApp = ({routes, user, authenticator}) => {
+const RoutingApp = ({routes, user, authenticator, firestore}) => {
 
   /*  If we define a route component inline, e.g.: <Route component={()=><Thing/>}/>,
       then the route component is different on every render and will always get re-rendered
@@ -95,12 +95,14 @@ const RoutingApp = ({routes, user, authenticator}) => {
       ({path, exact, title, search, Component})=>{
         let cached = null
         const PageComponent = () => (cached = cached ? cached : (
-          <AppPageWithNav {...{title, search, routes, user, authenticator}}><Component/></AppPageWithNav>
+          <AppPageWithNav {...{title, search, routes, user, authenticator}}>
+            <Component firestore={firestore}/>
+          </AppPageWithNav>
         ))
         return {path, exact, PageComponent}
       }
     )
-  }, [routes, user, authenticator])
+  }, [routes, user, authenticator, firestore])
 
   /*  Like PageWithNav, but fills in the Navlinks prop from RouteingApp props.
   */
@@ -124,6 +126,7 @@ const RoutingApp = ({routes, user, authenticator}) => {
 RoutingApp.propTypes = {
   routes: PropTypes.arrayOf(route).isRequired,
   user: user.isRequired,
+  firestore: PropTypes.shape({}).isRequired,
   //authenticator: PropTypes.shape({
     //signOut: PropTypes.fn.isRequired,
   //}).isRequired, // must be callable with no arguments.
@@ -325,23 +328,23 @@ let PageWithNav
 
     Props:
     - authenticator: an implementation of the Authenticator interface. XXX document Authenticator interface.
-    - fetch: as useFetches() from the fetch module.
-      Remaining props may be null until ready is true.
+    - firestore: as returned by firebase/firestore/useFirestore()
     - routes: array of routes that the user is authorized to use.
 */
 const AppWithNav = ({
   authenticator,
-  fetch, routes,
+  firestore,
+  routes,
 }) => {
   const {ready, error, isAuthenticated, user} = authenticator.auth();
   return !ready
     ? <CenteredBody><Spinner size="big"/></CenteredBody>
     : (
       error
-      ? <CenteredBody><Error onClick={()=>fetch()}>{error.message}: click to try again</Error></CenteredBody>
+      ? <CenteredBody><Error onClick={()=>authenticator.auth()}>{error.message}: click to try again</Error></CenteredBody>
       : (
         isAuthenticated
-        ? <RoutingApp {...{routes, user, authenticator}}/>
+        ? <RoutingApp {...{routes, user, authenticator, firestore}}/>
         : <Responsive
             Mobile={()=><SignInForm {...{authenticator}} style={{margin:'4rem auto'}}/>}
             Desktop={()=>(
@@ -357,7 +360,8 @@ const AppWithNav = ({
 AppWithNav.propTypes = {
   authenticator: PropTypes.shape({
   }).isRequired,
-  fetch: PropTypes.func.isRequired,
+  firestore: PropTypes.shape({
+  }).isRequired,
   routes: PropTypes.arrayOf(route).isRequired,
 }
 
