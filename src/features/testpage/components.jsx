@@ -13,8 +13,8 @@ const TestPromiseMaker = ({auto}) => {
   }, [counter])
 
   const useIt = auto ? useMakesPromise : useMakePromise
-  const {makePromise, ready, busy, result, error} = useIt(makePromiseFromCounter)
-  console.log({makePromise, ready, busy, result, error})
+  const {makePromise, ready, busy, result} = useIt(makePromiseFromCounter)
+  //console.log({makePromise, ready, busy, result, error})
   return (
     <div>
       <div>
