@@ -31,10 +31,17 @@ const useDocData = (firestore, docPath) => {
   return {response:value, ready:!loading, fetching:loading, error}
 }
 
-const defaultCollectionProcessor = collection => collection;
-const useCollectionData = (firestore, collectionName, {orderBy:myOrderBy}={}) => {
+const useCollectionData = (firestore, collectionName, {orderBy:myOrderBy, where:myWhere}={}) => {
   let coll = collection(firestore, collectionName).withConverter(postConverter)
-  if (myOrderBy) coll = query(coll, orderBy(myOrderBy))
+  if (myOrderBy && myWhere) {
+    coll = query(coll, orderBy(myOrderBy), where(myWhere))
+  }
+  else if (myOrderBy) {
+    coll = query(coll, orderBy(myOrderBy))
+  }
+  else if (myWhere) {
+    coll = query(coll, where(myWhere))
+  }
 
   const [value, loading, error] = fbUseCollectionData(coll)
   //console.log('uCDXXX', {value, firestore, collectionName})

@@ -2,69 +2,12 @@ import React from 'react'
 import {compose} from 'recompose'
 import {Link} from "react-router-dom"
 
-import {H6, UL, Div, P} from '../../core-lib/utils/components.jsx'
+import {UL, Div, P} from '../../core-lib/utils/components.jsx'
 import {useTracksActive} from '../../core-lib/ui/hooks.jsx'
-import {Error} from '../../core-lib/ui/components.jsx'
 import {Card} from '../../core-lib/ui/cards/components.jsx'
-import {SearchInterface} from '../../core-lib/search/components.jsx'
-import {useCollectionData} from '../../core-lib/firebase/firestore/hooks.jsx'
 import {Collection, Doc} from '../../core-lib/firebase/firestore/components.jsx'
 // import {logsRender} from '../../core-lib/utils/higher-order.jsx'
 import {addsStyle, addsClassNames} from '../../core-lib/utils/higher-order.jsx'
-
-import mockData from './mockdata.jsx'
-
-/*  Handle any item with "name" in its attributes.
-*/
-const buildSearchDisplay = (secondaryAttributeMap, subCollectionMap) => (
-  (firestore) => ({
-    H1: ({item}) => <div style={{fontWeight:'bold'}}>{ item.attributes.name }</div>,
-    H2: ({item}) => (
-      <React.Fragment>
-        { Object.entries(secondaryAttributeMap).map(
-            ([attrName, attrTitle]) => <span>{attrTitle}: {item.attributes[attrName]}</span>
-          )
-        }
-      </React.Fragment>
-    ),
-    Body: ({item}) => (
-      <React.Fragment>
-        { Object.entries(subCollectionMap).map(
-            ([attrName, [title, searchDisplay]]) => (
-              <React.Fragment>
-                { !title ? null : <H6 noMargin>{title}</H6> }
-                <SearchInterface
-                  searchDisplay={searchDisplay(firestore)}
-                  searchOperations={userSearchOperations}
-                  firestore={firestore}
-                  collectionName={`${item.path}/${attrName}`}
-                />
-              </React.Fragment>
-            )
-          )
-        }
-      </React.Fragment>
-    )
-  })
-);
-const diceSearchDisplay = buildSearchDisplay({die:'Die'}, {});
-const limitSearchDisplay = buildSearchDisplay({description:'Limit'}, {});
-const traitSetSearchDisplay = buildSearchDisplay(
-  {},
-  { dice:['', diceSearchDisplay],
-    limits:['', limitSearchDisplay]
-  }
-);
-const characterSearchDisplay = buildSearchDisplay({}, {trait_sets:['Trait Sets', traitSetSearchDisplay]});
-const gameSearchDisplay = buildSearchDisplay({}, {characters:['Characters', characterSearchDisplay]});
-const userSearchOperations = {
-  selectedOperations: [],
-  globalOperations: [],
-}
-const userFetchOptions = {
-  delay: 1000, // TODO USERS: remove once connected to real API.
-  mockData
-}
 
 const noShadow = {boxShadow:'none', border:'none'};
 const FlatUL = compose(
@@ -101,7 +44,7 @@ const CortexDiv = compose(
 
 const DieItem = ({firestore, item}) => (
   <div>{
-    item.attributes.die == 4
+    item.attributes.die === 4
     ? <span>{item.attributes.name} d{item.attributes.die}</span>
     : <b>{item.attributes.name} d{item.attributes.die}</b>
   }</div>
@@ -117,7 +60,7 @@ const TraitSetItem = ({firestore, item}) => (
     <Collection
      firestore={firestore}
      collectionName={`${item.path}/dice`}
-     orderBy="name"
+     orderBy={ item.attributes.name === 'Ability Scores' ? 'order' : 'name' }
      CollectionComponent={Div}
      ItemComponent={DieItem}
     />
@@ -133,12 +76,7 @@ const CharacterItem = ({firestore, item}) => {
   const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
   const isOpen = isActive(item.id);
   return <CortexDiv style={{marginTop:'1em'}}>
-    <h5
-     onClick={()=>{
-      console.log('h5XXX');
-      toggleActive(item.id);
-     }}
-    >
+    <h5 onClick={()=>{ toggleActive(item.id); }} >
       {item.attributes.name}
     </h5>
     <div style={{display:(isOpen ? 'block' : 'none')}}>
