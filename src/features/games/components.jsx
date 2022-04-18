@@ -3,6 +3,7 @@ import {compose} from 'recompose'
 import {Link} from "react-router-dom"
 
 import {H6, UL, Div, P} from '../../core-lib/utils/components.jsx'
+import {useTracksActive} from '../../core-lib/ui/hooks.jsx'
 import {Error} from '../../core-lib/ui/components.jsx'
 import {Card} from '../../core-lib/ui/cards/components.jsx'
 import {SearchInterface} from '../../core-lib/search/components.jsx'
@@ -99,9 +100,11 @@ const CortexDiv = compose(
 )(Card)
 
 const DieItem = ({firestore, item}) => (
-  <div>
-    <b>{item.attributes.name} d{item.attributes.die}</b>
-  </div>
+  <div>{
+    item.attributes.die == 4
+    ? <span>{item.attributes.name} d{item.attributes.die}</span>
+    : <b>{item.attributes.name} d{item.attributes.die}</b>
+  }</div>
 )
 const LimitItem = ({firestore, item}) => (
   <span>
@@ -126,18 +129,29 @@ const TraitSetItem = ({firestore, item}) => (
     />
   </CortexDiv>
 )
-const CharacterItem = ({firestore, item}) => (
-  <CortexDiv style={{marginTop:'1em'}}>
-    <b>{item.attributes.name}</b>
-    <Collection
-     firestore={firestore}
-     collectionName={`${item.path}/trait_sets`}
-     orderBy="order"
-     CollectionComponent={Div}
-     ItemComponent={TraitSetItem}
-    />
+const CharacterItem = ({firestore, item}) => {
+  const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
+  const isOpen = isActive(item.id);
+  return <CortexDiv style={{marginTop:'1em'}}>
+    <h5
+     onClick={()=>{
+      console.log('h5XXX');
+      toggleActive(item.id);
+     }}
+    >
+      {item.attributes.name}
+    </h5>
+    <div style={{display:(isOpen ? 'block' : 'none')}}>
+      <Collection
+       firestore={firestore}
+       collectionName={`${item.path}/trait_sets`}
+       orderBy="order"
+       CollectionComponent={Div}
+       ItemComponent={TraitSetItem}
+      />
+    </div>
   </CortexDiv>
-)
+}
 
 const GameDoc = ({firestore, doc}) => (
   <div style={{padding:'0 2em 2em'}}>
