@@ -1,5 +1,5 @@
 import projectsMockData from '../projects/mockdata.jsx'
-import usersMockData from '../users/mockdata.jsx'
+import usersMockData from '../games/mockdata.jsx'
 
 export default () => ({
   links: { self: 'XXX', next: 'XXX', last: 'XXX', },

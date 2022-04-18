@@ -12,6 +12,7 @@ const Div = ({...props}) => <div {...props}/>; Div.propTypes = standardPropTypes
 const Span = ({...props}) => <span {...props}/>; Span.propTypes = standardPropTypes;
 const I = ({...props}) => <i {...props}/>; I.propTypes = standardPropTypes;
 const A = ({children, ...props}) => <a {...props}>{children}</a>; A.propTypes = standardPropTypes;
+const P = ({...props}) => <p {...props}/>; P.propTypes = standardPropTypes;
 
 const UL = ({...props}) => <ul {...props}/>; UL.propTypes = standardPropTypes;
 const OL = ({...props}) => <ol {...props}/>; OL.propTypes = standardPropTypes;
@@ -57,7 +58,8 @@ LoremIpsum.propTypes = {
 }
 
 export {
-  Div, Span, A, I, UL, OL, LI, Form, Button,
+  Div, Span, A, I, P,
+  UL, OL, LI, Form, Button,
   H1, H2, H3, H4, H5, H6,
   LoremIpsum
 }

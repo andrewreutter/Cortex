@@ -51,7 +51,9 @@ Navlink.propTypes = {
 const AppPageWithNav = ({title, search, routes, user, authenticator, children}) => {
   const Navlinks = useMemo(()=>(
     <React.Fragment>
-      {routes.map(({path, exact, title})=>(
+      {routes
+       .filter(route=>route.navigable)
+       .map(({path, exact, title})=>(
         <Route key={path} {...{path, exact}} children={({match}) => (
           <Navlink active={!!match}>
             <Link to={path}>{title}</Link>

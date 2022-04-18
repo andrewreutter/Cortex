@@ -1,6 +1,9 @@
 import {useMemo} from 'react'
-import { getFirestore, collection } from 'firebase/firestore';
-import { useCollectionData as fbUseCollectionData } from 'react-firebase-hooks/firestore';
+import { getFirestore, collection, doc, query, orderBy, where } from 'firebase/firestore';
+import {
+  useCollectionData as fbUseCollectionData,
+  useDocumentData as fbUseDocData
+} from 'react-firebase-hooks/firestore';
 
 const postConverter = {
   toFirestore: item => item.attributes,
@@ -20,12 +23,22 @@ const useFirestore = (firebaseApp) => {
   return firestore
 }
 
-const useCollectionData = (firestore, collectionName) => {
-  const [value, loading, error] = fbUseCollectionData(
-    collection(firestore, collectionName).withConverter(postConverter)
+const useDocData = (firestore, docPath) => {
+  const [value, loading, error] = fbUseDocData(
+    doc(firestore, docPath).withConverter(postConverter)
   )
   //console.log('uCDXXX', {value, firestore, collectionName})
   return {response:value, ready:!loading, fetching:loading, error}
 }
 
-export {useFirestore, useCollectionData}
+const defaultCollectionProcessor = collection => collection;
+const useCollectionData = (firestore, collectionName, {orderBy:myOrderBy}={}) => {
+  let coll = collection(firestore, collectionName).withConverter(postConverter)
+  if (myOrderBy) coll = query(coll, orderBy(myOrderBy))
+
+  const [value, loading, error] = fbUseCollectionData(coll)
+  //console.log('uCDXXX', {value, firestore, collectionName})
+  return {response:value, ready:!loading, fetching:loading, error}
+}
+
+export {useFirestore, useCollectionData, useDocData}
