@@ -2,7 +2,7 @@ import React from 'react'
 import {compose} from 'recompose'
 import {Link} from "react-router-dom"
 
-import {UL, Div, P} from '../../core-lib/utils/components.jsx'
+import {UL, Span, Div, P} from '../../core-lib/utils/components.jsx'
 import {useTracksActive} from '../../core-lib/ui/hooks.jsx'
 import {Card} from '../../core-lib/ui/cards/components.jsx'
 import {Collection, Doc} from '../../core-lib/firebase/firestore/components.jsx'
@@ -87,9 +87,61 @@ const CharacterItem = ({firestore, item}) => {
        CollectionComponent={Div}
        ItemComponent={TraitSetItem}
       />
+      <CharacterAsMarkup item={item} firestore={firestore}/>
     </div>
   </CortexDiv>
 }
+
+const Indent = () => <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+const LimitAsMarkup = ({item, firestore}) => (
+  <span>
+    <br/><Indent/><Indent/><Indent/><Indent/>&#123;name: '{item.attributes.name}', description:'{item.attributes.description}' &#125;,
+  </span>
+)
+const DieAsMarkup = ({item, firestore}) => (
+  <span>
+    <br/><Indent/><Indent/><Indent/><Indent/>&#123;name: '{item.attributes.name}', die:{item.attributes.die} &#125;,
+  </span>
+)
+const TraitSetAsMarkup = ({item, firestore}) => (
+  <span>
+    <br/><Indent/><Indent/>&#123;<Indent/>name: '{item.attributes.name}',
+    <br/><Indent/><Indent/><Indent/>order: {item.attributes.order},
+    <br/><Indent/><Indent/><Indent/>dice: [
+    <Collection
+     firestore={firestore}
+     collectionName={`${item.path}/dice`}
+     orderBy={ item.attributes.name === 'Ability Scores' ? 'order' : 'name' }
+     CollectionComponent={Span}
+     ItemComponent={DieAsMarkup}
+    />
+    <br/><Indent/><Indent/><Indent/>],
+    <br/><Indent/><Indent/><Indent/>limits: [
+    <Collection
+     firestore={firestore}
+     collectionName={`${item.path}/limits`}
+     CollectionComponent={Span}
+     ItemComponent={LimitAsMarkup}
+    />
+    <br/><Indent/><Indent/><Indent/>],
+    <br/><Indent/><Indent/>&#125;,
+  </span>
+)
+const CharacterAsMarkup = ({item, firestore}) => (
+  <span>
+    <br/>&#123;<Indent/>name: '{item.attributes.name}',
+    <br/><Indent/>trait_sets: [
+    <Collection
+     firestore={firestore}
+     collectionName={`${item.path}/trait_sets`}
+     orderBy="order"
+     CollectionComponent={Span}
+     ItemComponent={TraitSetAsMarkup}
+    />
+    <br/><Indent/>]
+    <br/>&#125;
+  </span>
+)
 
 const GameDoc = ({firestore, doc}) => (
   <div style={{padding:'0 2em 2em'}}>
