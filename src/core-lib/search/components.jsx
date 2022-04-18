@@ -135,12 +135,9 @@ SearchResults.propTypes = {
 /*  Main content for a search page, including a header and results.
     Ties to page-level search element to run searches when the search string changes.
 */
-const defaultFetchOptions = {} // lifted out of SearchInterface to avoid identity changes.
 const WhiteFixFirstChild = props => <FixFirstChild {...props} fixedStyle={{backgroundColor:'white'}}/>
 const SearchInterface = ({
   fixedHeader,
-  //searchToUrl,
-  //fetchOptions=defaultFetchOptions,
   searchDisplay,
   searchOperations,
   firestore,
@@ -172,7 +169,6 @@ SearchInterface.defaultProps = {
   fixedHeader: true,
 }
 SearchInterface.propTypes = {
-  //fetchOptions: PropTypes.object.isRequired,      // be careful not to change the identity of these options!
   searchDisplay: searchDisplay.isRequired,        // display spec; see proptypes.jsx
   searchOperations: searchOperations.isRequired,  // operations spec; see proptypes.jsx
   fixedHeader: PropTypes.bool.isRequired,         // should the header be fixed?
