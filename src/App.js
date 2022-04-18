@@ -12,7 +12,7 @@ import {LoremIpsum} from './core-lib/utils/components.jsx'
 import {useAuthenticator} from './core-lib/firebase/auth/hooks.jsx'
 import {useFirestore} from './core-lib/firebase/firestore/hooks.jsx'
 
-import {UsersRoute} from './features/users/components.jsx'
+import {GamesRoute} from './features/games/components.jsx'
 //import {ProjectsRoute} from './features/projects/components.jsx'
 //import {AssignmentsRoute} from './features/assignments/components.jsx'
 import {SandboxRoute} from './features/testpage/components.jsx'
@@ -37,7 +37,7 @@ const HomeRoute = () => ( // TODO LAUNCH: Make a Home route or remove this
 
 const ROUTES = [
   {title:"Home",        path:"/",             exact:true, search:false, Component:HomeRoute},
-  {title:"Games",       path:"/games/",       exact:true, search:true,  Component:UsersRoute},
+  {title:"Games",       path:"/games/",       exact:true, search:true,  Component:GamesRoute},
   //{title:"Projects",    path:"/projects/",    exact:true, search:true,  Component:ProjectsRoute},
   //{title:"Assignments", path:"/assignments/", exact:true, search:true,  Component:AssignmentsRoute},
   {title:"Sandbox",     path:"/sandbox/",     exact:true, search:true,  Component:SandboxRoute}, // TODO LAUNCH: remove

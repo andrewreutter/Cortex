@@ -62,7 +62,7 @@ const userFetchOptions = {
   mockData
 }
 
-const UsersRoute = 
+const GamesRoute = 
   ({firestore}) => {
     const {response, ready, error} = useCollectionData(firestore, 'games')
     const noShadow = {boxShadow:'none', border:'none'};
@@ -95,4 +95,4 @@ const UsersRoute =
     />
   }
 
-export {UsersRoute}
+export {GamesRoute}
