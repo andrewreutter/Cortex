@@ -1,5 +1,5 @@
 import {useMemo} from 'react'
-import { getFirestore, collection, doc, query, orderBy, where } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, query, orderBy, where } from 'firebase/firestore';
 import {
   useCollectionData as fbUseCollectionData,
   useDocumentData as fbUseDocData
@@ -11,6 +11,8 @@ const postConverter = {
     attributes: snapshot.data(options),
     id: snapshot.id,
     ref: snapshot.ref,
+    snapshot: snapshot,
+    setDoc: (values) => setDoc(snapshot.ref, values),
     path: snapshot.ref._key.path.segments.slice(snapshot.ref._key.path.offset).join('/')
   }),
 };

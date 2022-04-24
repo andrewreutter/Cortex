@@ -1,7 +1,11 @@
 import React from 'react'
 import {compose} from 'recompose'
+import {connect} from 'react-redux'
 import {Link} from "react-router-dom"
+import {Field, reduxForm, formValueSelector} from 'redux-form'
+import { useForm, useWatch } from "react-hook-form";
 
+import {InputWrapper} from '../../core-lib/ui/forms/components.jsx'
 import {UL, Span, Div, P} from '../../core-lib/utils/components.jsx'
 import {useTracksActive} from '../../core-lib/ui/hooks.jsx'
 import {Card} from '../../core-lib/ui/cards/components.jsx'
@@ -143,6 +147,167 @@ const CharacterAsMarkup = ({item, firestore}) => (
   </span>
 )
 
+const Die = ({die}) => (
+  <div>{(
+    die.size == 4
+    ? <span>{die.name} d{die.die} {die.description}</span>
+    : <span><b>{die.name} d{die.die}</b> {die.description}</span>
+  )}</div>
+)
+
+const SFXOrLimit = ({category, item}) => (
+  <div>
+    <b>{category}:</b> <i>{item.name}</i>. {item.description}
+  </div>
+)
+
+// XXX TODO: notes!
+const TraitSet = ({traitSet}) => (
+  <div style={{marginBottom:'1em'}}>
+    <h6><b><u>{traitSet.name}</u></b></h6>
+    <div>{traitSet.dice.map((die, idx)=><Die key={idx} die={die}/>)}</div>
+    <div>{traitSet.limits.map((item, idx)=><SFXOrLimit key={idx} category="Limit" item={item}/>)}</div>
+    <div>{traitSet.sfx.map((item, idx)=><SFXOrLimit key={idx} category="SFX" item={item}/>)}</div>
+  </div>
+)
+
+const StepMarkup = ({markup}) => {
+  return (
+    <div>
+      { markupToTraitSets(markup).map((traitSet, idx)=>(
+          <TraitSet key={idx} traitSet={traitSet}/>
+        ))
+      }
+    </div>
+  )
+}
+
+const markupToTraitSets = markup => {
+  const parseSFXOrLimit = (rest, target) => {
+    const itemStr = rest.join(':');
+    const [sloppyName, ...descriptionChunks] = itemStr.split('.');
+    target.push({
+      name: sloppyName.trim(),
+      description: descriptionChunks.join('.').trim()
+    });
+  }
+  const traitSetChunks = markup.split('\n\n');
+  const traitSets = traitSetChunks.map(
+    traitSetChunk => {
+      const traitSetLines = traitSetChunk.split('\n').map(s=>s.trim());
+      const [name, ...rest] = traitSetLines;
+      const dice=[], limits=[], sfx=[], notes=[]
+      rest.forEach(line => {
+        const [lineType, ...rest] = line.split(':');
+        if (lineType == 'Limit') { parseSFXOrLimit(rest, limits) }
+        else if (lineType == 'SFX') { parseSFXOrLimit(rest, sfx) }
+        else {
+          const dieSplits = line.split(/ (d(4|6|8|10|12))/);
+          if (dieSplits.length == 1) 
+            notes.push(dieSplits[0])
+          else  {
+            dice.push({
+              name: dieSplits[0],
+              die: parseInt(dieSplits[1].slice(1)),
+              description: dieSplits.slice(3).join('')
+            });
+          }
+        }
+      })
+      return { name, dice, limits, sfx, notes }
+    }
+  );
+  return traitSets;
+}
+
+const GrowingTextarea = ({register, name, ...props}) => {
+  const reheight = event => {
+    console.log('rehiehgt');
+    event.target.style.height = "1px";
+    event.target.style.height = (5+event.target.scrollHeight)+"px";
+  }
+  console.log('GTaXXX', {props});
+  const registered = register(name);
+  return <textarea {...registered} style={{height:'100%'}} {...props}/>
+}
+
+const StepItem = ({firestore, item}) => {
+  const {register, control, getValues, handleSubmit} = useForm({defaultValues:item.attributes});
+  const submit = values => item.setDoc(values);
+
+  return (
+    <CortexDiv style={{marginTop:'1em'}}>
+      <h5>
+        {item.attributes.name}
+      </h5>
+      <div>
+        <div style={{width:'50%', float:'left'}}>
+          <StepMarkup markup={item.attributes.markup}/>
+        </div>
+        <div style={{width:'50%', float:'left'}}>
+          <form onSubmit={handleSubmit(submit)}>
+            <InputWrapper>
+              <GrowingTextarea register={register} 
+                name="markup" placeholder="Markup" autoComplete="off"
+              />
+            </InputWrapper>
+            <input type="submit" value="doit"/>
+          </form>
+        </div>
+        <div style={{clear:'both'}}/>
+      </div>
+    </CortexDiv>
+  )
+};
+
+const BadStepItem = compose(
+  Component => (
+    ({item, ...props}) => {
+      const formId = `editMarkup${item.key}`;
+
+      let FormedComponent = reduxForm({
+        form:formId,
+        initialValues: item.attributes,
+        enableReinitialize:true,
+        validate: (values, props) => (console.log('rdfXXX', values, props), {})
+      })(Component)
+
+      const selector = formValueSelector(formId);
+      FormedComponent = connect(
+        state => {
+          const markup = selector(state, 'markup')
+          return {markup};
+        }
+      )(FormedComponent)
+      
+      return <FormedComponent {...{item}} {...props}/>
+    }
+  )
+)(
+  ({firestore, item, handleSubmit, markup, ...rest}) => {
+    //const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
+    //const isOpen = isActive(item.id);
+      //<h5 onClick={()=>{ toggleActive(item.id); }} >
+      //<div style={{display:(isOpen ? 'block' : 'none')}}>
+    console.log('iamXXX', markup, item.attributes.markup, rest);
+    const write = values => console.log('vXXX', markup);
+    return <CortexDiv style={{marginTop:'1em'}}>
+      <h5>
+        {item.attributes.name}
+      </h5>
+      <div>
+        <form onSubmit={handleSubmit}>
+          <InputWrapper>
+            <Field name="markup" component="textarea" type="text" placeholder="Markup" autoComplete="off" onChange={write}/>
+          </InputWrapper>
+          <input type="submit" value="doit"/>
+        <textarea value={item.attributes.markup} onChange={write}/>
+        </form>
+      </div>
+    </CortexDiv>
+  }
+)
+
 const GameDoc = ({firestore, doc}) => (
   <div style={{padding:'0 2em 2em'}}>
     <h3>{doc.attributes.name}</h3>
@@ -153,10 +318,17 @@ const GameDoc = ({firestore, doc}) => (
      CollectionComponent={Div}
      ItemComponent={CharacterItem}
     />
+    <h4>Steps</h4>
+    <Collection
+     firestore={firestore}
+     collectionName={`${doc.path}/steps`}
+     CollectionComponent={Div}
+     ItemComponent={StepItem}
+    />
   </div>
 )
 
-// XXX hardcoded docPath!!!
+// XXX TODO hardcoded docPath!!!
 const GameRoute = ({firestore, ...rest}) => (
   <Doc
    firestore={firestore}
