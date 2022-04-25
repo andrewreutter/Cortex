@@ -1,13 +1,16 @@
 import React from 'react'
+import {useState, useMemo, useEffect} from 'react'
 import {compose} from 'recompose'
 import {Link} from "react-router-dom"
 import {useForm} from "react-hook-form";
+import {collection, getDoc, doc} from 'firebase/firestore';
 
 import {InputWrapper} from '../../core-lib/ui/forms/components.jsx'
 import {UL, Span, Div, P} from '../../core-lib/utils/components.jsx'
 import {useTracksActive} from '../../core-lib/ui/hooks.jsx'
 import {Card} from '../../core-lib/ui/cards/components.jsx'
 import {Collection, Doc} from '../../core-lib/firebase/firestore/components.jsx'
+import {postConverter, useDocData, useCollectionData} from '../../core-lib/firebase/firestore/hooks.jsx'
 // import {logsRender} from '../../core-lib/utils/higher-order.jsx'
 import {addsStyle, addsClassNames} from '../../core-lib/utils/higher-order.jsx'
 
@@ -74,7 +77,94 @@ const TraitSetItem = ({firestore, item}) => (
     />
   </CortexDiv>
 )
+const CharacterStepItem = ({firestore, item}) => {
+  return <CortexDiv>
+    <Doc
+     firestore={firestore}
+     docPath={item.attributes.stepRef.path}
+     DocComponent={StepItem}
+    />
+  </CortexDiv>
+}
+/* Take a character doc and elaborate it. */
+const useCharacterBuilder = (firestore, item) => {
+  const {response:steps, ready, error} = useCollectionData(firestore, `${item.path}/steps`);
+  const stepPaths = useMemo(
+    () => ready ? steps.map(step=>step.attributes.stepRef.path) : null,
+    [ready, steps]
+  );
+
+  const [stepResults, setStepResults] = useState(null);
+  useEffect(()=>{
+    // XXX TODO: make this responsive to changes in the firestore.
+    if (stepPaths && !stepResults)
+    Promise
+      .all(
+        stepPaths.map(
+          stepPath => {
+            const stepDoc = doc(firestore, stepPath).withConverter(postConverter);
+            return getDoc(stepDoc).then(response=>response.data());
+          }
+        )
+      )
+      .then(response => setStepResults(response))
+    ;
+  });
+
+  const pathsTraitSets = useMemo(
+    () => (!stepResults
+      ? []
+      : stepResults.map(
+        path => markupToTraitSets(path.attributes.markup)
+      )
+    ),
+    [stepResults]
+  );
+
+  const traitSets = useMemo(
+    () => {
+      const mergedTraitSets = [], keyedTraitSets = {};
+      pathsTraitSets.forEach(pathTraitSets => {
+        pathTraitSets.forEach(pathTraitSet => {
+          const traitSetName = pathTraitSet.name;
+          let targetTraitSet = keyedTraitSets[traitSetName];
+          if (!targetTraitSet) {
+            targetTraitSet = {name: traitSetName, dice:[], limits:[], sfx:[], notes:[]};
+            mergedTraitSets.push(targetTraitSet);
+            keyedTraitSets[traitSetName] = targetTraitSet;
+          }
+
+          const keyedDice = {};
+          targetTraitSet.dice.forEach(die => {
+            keyedDice[die.name] = die;
+          });
+          pathTraitSet.dice.forEach(die => {
+            const currentDie = keyedDice[die.name];
+            if (currentDie) {
+              console.log({currentDie, die});
+              if (die.die > currentDie.die)
+                Object.assign(currentDie, die)
+            } else {
+              targetTraitSet.dice.push({...die})
+            }
+          });
+
+          pathTraitSet.limits.forEach(die => targetTraitSet.limits.push({...die}));
+          pathTraitSet.sfx.forEach(die => targetTraitSet.sfx.push({...die}));
+          pathTraitSet.notes.forEach(die => targetTraitSet.notes.push({...die}));
+        })
+      });
+      return mergedTraitSets;
+    },
+    [pathsTraitSets]
+  );
+
+  const character = {...item, traitSets};
+  console.log('ucbXXX', {character, stepPaths, stepResults, pathsTraitSets, traitSets});
+  return character;
+}
 const CharacterItem = ({firestore, item}) => {
+  const character = useCharacterBuilder(firestore, item);
   const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
   const isOpen = isActive(item.id);
   return <CortexDiv style={{marginTop:'1em'}}>
@@ -82,14 +172,20 @@ const CharacterItem = ({firestore, item}) => {
       {item.attributes.name}
     </h5>
     <div style={{display:(isOpen ? 'block' : 'none')}}>
-      <Collection
-       firestore={firestore}
-       collectionName={`${item.path}/trait_sets`}
-       orderBy="order"
-       CollectionComponent={Div}
-       ItemComponent={TraitSetItem}
-      />
-      <CharacterAsMarkup item={item} firestore={firestore}/>
+      {character.traitSets.map(
+        traitSet => <CortexDiv key={traitSet.name} style={{marginTop:'1em'}}>
+          <h6><u><b>{traitSet.name}</b></u></h6>
+          {traitSet.dice.map(
+            (die, idx) => <DieItem key={idx} item={{attributes:die}}/>
+          )}
+          {traitSet.limits.map(
+            (die, idx) => <SFXOrLimit key={idx} category="Limit" item={die}/>
+          )}
+          {traitSet.sfx.map(
+            (die, idx) => <SFXOrLimit key={idx} category="SFX" item={die}/>
+          )}
+        </CortexDiv>
+      )}
     </div>
   </CortexDiv>
 }
@@ -132,10 +228,10 @@ const TraitSetAsMarkup = ({item, firestore}) => (
 const CharacterAsMarkup = ({item, firestore}) => (
   <span>
     <br/>&#123;<Indent/>name: '{item.attributes.name}',
-    <br/><Indent/>trait_sets: [
+    <br/><Indent/>traitSets: [
     <Collection
      firestore={firestore}
-     collectionName={`${item.path}/trait_sets`}
+     collectionName={`${item.path}/traitSets`}
      orderBy="order"
      CollectionComponent={Span}
      ItemComponent={TraitSetAsMarkup}
@@ -229,7 +325,8 @@ const GrowingTextarea = ({register, name, ...props}) => {
   return <textarea {...registered} onKeyUp={reheight} style={{height:'100%'}} {...props}/>
 }
 
-const StepItem = ({firestore, item}) => {
+const StepItem = ({firestore, item, doc}) => {
+  item = item || doc;
   const {register, formState, handleSubmit, setFocus, reset} =
     useForm({defaultValues:item.attributes});
   const submit = values => { 

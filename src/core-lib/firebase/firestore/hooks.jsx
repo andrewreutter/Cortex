@@ -5,16 +5,24 @@ import {
   useDocumentData as fbUseDocData
 } from 'react-firebase-hooks/firestore';
 
+const refToPath = ref => ref._key.path.segments.slice(ref._key.path.offset).join('/');
+
 const postConverter = {
   toFirestore: item => item.attributes,
-  fromFirestore: (snapshot, options) => ({
-    attributes: snapshot.data(options),
-    id: snapshot.id,
-    ref: snapshot.ref,
-    snapshot: snapshot,
-    setDoc: (values) => setDoc(snapshot.ref, values),
-    path: snapshot.ref._key.path.segments.slice(snapshot.ref._key.path.offset).join('/')
-  }),
+  fromFirestore: (snapshot, options) => {
+    const attributes = snapshot.data(options);
+    Object.entries(attributes).forEach(([key, val])=>{
+      if (val._key) attributes[key] = {ref:val, path:refToPath(val)};
+    });
+    return ({
+      attributes: attributes,
+      id: snapshot.id,
+      ref: snapshot.ref,
+      snapshot: snapshot,
+      setDoc: (values) => setDoc(snapshot.ref, values),
+      path: refToPath(snapshot.ref),
+    })
+  }
 };
 
 const useFirestore = (firebaseApp) => {
@@ -50,4 +58,4 @@ const useCollectionData = (firestore, collectionName, {orderBy:myOrderBy, where:
   return {response:value, ready:!loading, fetching:loading, error}
 }
 
-export {useFirestore, useCollectionData, useDocData}
+export {useFirestore, useCollectionData, useDocData, postConverter}
