@@ -1,9 +1,7 @@
 import React from 'react'
 import {compose} from 'recompose'
-import {connect} from 'react-redux'
 import {Link} from "react-router-dom"
-import {Field, reduxForm, formValueSelector} from 'redux-form'
-import { useForm, useWatch } from "react-hook-form";
+import {useForm} from "react-hook-form";
 
 import {InputWrapper} from '../../core-lib/ui/forms/components.jsx'
 import {UL, Span, Div, P} from '../../core-lib/utils/components.jsx'
@@ -149,7 +147,7 @@ const CharacterAsMarkup = ({item, firestore}) => (
 
 const Die = ({die}) => (
   <div>{(
-    die.size == 4
+    die.size === 4
     ? <span>{die.name} d{die.die} {die.description}</span>
     : <span><b>{die.name} d{die.die}</b> {die.description}</span>
   )}</div>
@@ -163,12 +161,12 @@ const SFXOrLimit = ({category, item}) => (
 
 // XXX TODO: notes!
 const TraitSet = ({traitSet}) => (
-  <div style={{marginBottom:'1em'}}>
+  <CortexDiv style={{marginBottom:'1em'}}>
     <h6><b><u>{traitSet.name}</u></b></h6>
     <div>{traitSet.dice.map((die, idx)=><Die key={idx} die={die}/>)}</div>
     <div>{traitSet.limits.map((item, idx)=><SFXOrLimit key={idx} category="Limit" item={item}/>)}</div>
     <div>{traitSet.sfx.map((item, idx)=><SFXOrLimit key={idx} category="SFX" item={item}/>)}</div>
-  </div>
+  </CortexDiv>
 )
 
 const StepMarkup = ({markup}) => {
@@ -191,7 +189,7 @@ const markupToTraitSets = markup => {
       description: descriptionChunks.join('.').trim()
     });
   }
-  const traitSetChunks = markup.split('\n\n');
+  const traitSetChunks = markup ? markup.split('\n\n') : [];
   const traitSets = traitSetChunks.map(
     traitSetChunk => {
       const traitSetLines = traitSetChunk.split('\n').map(s=>s.trim());
@@ -199,11 +197,11 @@ const markupToTraitSets = markup => {
       const dice=[], limits=[], sfx=[], notes=[]
       rest.forEach(line => {
         const [lineType, ...rest] = line.split(':');
-        if (lineType == 'Limit') { parseSFXOrLimit(rest, limits) }
-        else if (lineType == 'SFX') { parseSFXOrLimit(rest, sfx) }
+        if (lineType === 'Limit') { parseSFXOrLimit(rest, limits) }
+        else if (lineType === 'SFX') { parseSFXOrLimit(rest, sfx) }
         else {
           const dieSplits = line.split(/ (d(4|6|8|10|12))/);
-          if (dieSplits.length == 1) 
+          if (dieSplits.length === 1) 
             notes.push(dieSplits[0])
           else  {
             dice.push({
@@ -222,36 +220,49 @@ const markupToTraitSets = markup => {
 
 const GrowingTextarea = ({register, name, ...props}) => {
   const reheight = event => {
-    console.log('rehiehgt');
+    //console.log('rehiehgt');
     event.target.style.height = "1px";
     event.target.style.height = (5+event.target.scrollHeight)+"px";
   }
-  console.log('GTaXXX', {props});
+  //console.log('GTaXXX', {props});
   const registered = register(name);
-  return <textarea {...registered} style={{height:'100%'}} {...props}/>
+  return <textarea {...registered} onKeyUp={reheight} style={{height:'100%'}} {...props}/>
 }
 
 const StepItem = ({firestore, item}) => {
-  const {register, control, getValues, handleSubmit} = useForm({defaultValues:item.attributes});
-  const submit = values => item.setDoc(values);
+  const {register, formState, handleSubmit, setFocus, reset} =
+    useForm({defaultValues:item.attributes});
+  const submit = values => { 
+    item.setDoc(values);
+    reset({keepValues:true, values:item.attributes}); 
+  }
+  const {isDirty} = formState
+
+  React.useEffect(
+    ()=>setFocus('name'),
+    [setFocus]
+  )
 
   return (
     <CortexDiv style={{marginTop:'1em'}}>
-      <h5>
-        {item.attributes.name}
-      </h5>
       <div>
-        <div style={{width:'50%', float:'left'}}>
+        <div style={{width:'50%', float:'left', paddingRight:'1em'}}>
+          <h5>
+            {item.attributes.name}
+          </h5>
           <StepMarkup markup={item.attributes.markup}/>
         </div>
-        <div style={{width:'50%', float:'left'}}>
+        <div style={{width:'50%', float:'left', paddingLeft:'1em'}}>
           <form onSubmit={handleSubmit(submit)}>
+            <InputWrapper>
+              <input {...register('name')} type="text" placeholder="Name"/>
+            </InputWrapper>
             <InputWrapper>
               <GrowingTextarea register={register} 
                 name="markup" placeholder="Markup" autoComplete="off"
               />
             </InputWrapper>
-            <input type="submit" value="doit"/>
+            <input type="submit" value="Save" disabled={!isDirty}/>
           </form>
         </div>
         <div style={{clear:'both'}}/>
@@ -260,57 +271,32 @@ const StepItem = ({firestore, item}) => {
   )
 };
 
-const BadStepItem = compose(
-  Component => (
-    ({item, ...props}) => {
-      const formId = `editMarkup${item.key}`;
-
-      let FormedComponent = reduxForm({
-        form:formId,
-        initialValues: item.attributes,
-        enableReinitialize:true,
-        validate: (values, props) => (console.log('rdfXXX', values, props), {})
-      })(Component)
-
-      const selector = formValueSelector(formId);
-      FormedComponent = connect(
-        state => {
-          const markup = selector(state, 'markup')
-          return {markup};
-        }
-      )(FormedComponent)
-      
-      return <FormedComponent {...{item}} {...props}/>
-    }
-  )
-)(
-  ({firestore, item, handleSubmit, markup, ...rest}) => {
-    //const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
-    //const isOpen = isActive(item.id);
-      //<h5 onClick={()=>{ toggleActive(item.id); }} >
-      //<div style={{display:(isOpen ? 'block' : 'none')}}>
-    console.log('iamXXX', markup, item.attributes.markup, rest);
-    const write = values => console.log('vXXX', markup);
-    return <CortexDiv style={{marginTop:'1em'}}>
-      <h5>
-        {item.attributes.name}
-      </h5>
-      <div>
-        <form onSubmit={handleSubmit}>
-          <InputWrapper>
-            <Field name="markup" component="textarea" type="text" placeholder="Markup" autoComplete="off" onChange={write}/>
-          </InputWrapper>
-          <input type="submit" value="doit"/>
-        <textarea value={item.attributes.markup} onChange={write}/>
-        </form>
+const PathListItem = ({firestore, item}) => {
+  const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
+  const isOpen = isActive(item.id);
+  return (
+    <li style={noShadow}>
+      <div className="collapsible-header" style={{fontWeight:'bold'}}
+        onClick={()=>{ toggleActive(item.id); }} 
+      >
+        { item.attributes.name }
       </div>
-    </CortexDiv>
-  }
-)
+      <div style={{display:(isOpen ? 'block' : 'none')}}>
+        <Collection
+         firestore={firestore}
+         collectionName={`${item.path}/steps`}
+         CollectionComponent={Div}
+         ItemComponent={StepItem}
+        />
+      </div>
+    </li>
+  )
+}
 
 const GameDoc = ({firestore, doc}) => (
   <div style={{padding:'0 2em 2em'}}>
     <h3>{doc.attributes.name}</h3>
+
     <h4>Characters</h4>
     <Collection
      firestore={firestore}
@@ -318,6 +304,15 @@ const GameDoc = ({firestore, doc}) => (
      CollectionComponent={Div}
      ItemComponent={CharacterItem}
     />
+
+    <h4>Paths</h4>
+    <Collection
+     firestore={firestore}
+     collectionName={`${doc.path}/paths`}
+     CollectionComponent={FlatUL}
+     ItemComponent={PathListItem}
+    />
+
     <h4>Steps</h4>
     <Collection
      firestore={firestore}
