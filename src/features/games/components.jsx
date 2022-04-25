@@ -88,7 +88,8 @@ const CharacterStepItem = ({firestore, item}) => {
 }
 /* Take a character doc and elaborate it. */
 const useCharacterBuilder = (firestore, item) => {
-  const {response:steps, ready, error} = useCollectionData(firestore, `${item.path}/steps`);
+  const {response:steps, ready} = useCollectionData(firestore, `${item.path}/steps`);
+  // XXX TODO: also pull error from useCollectionData() and do something with it.
   const stepPaths = useMemo(
     () => ready ? steps.map(step=>step.attributes.stepRef.path) : null,
     [ready, steps]
@@ -141,7 +142,6 @@ const useCharacterBuilder = (firestore, item) => {
           pathTraitSet.dice.forEach(die => {
             const currentDie = keyedDice[die.name];
             if (currentDie) {
-              console.log({currentDie, die});
               if (die.die > currentDie.die)
                 Object.assign(currentDie, die)
             } else {
@@ -160,7 +160,7 @@ const useCharacterBuilder = (firestore, item) => {
   );
 
   const character = {...item, traitSets};
-  console.log('ucbXXX', {character, stepPaths, stepResults, pathsTraitSets, traitSets});
+  //console.log('ucbXXX', {character, stepPaths, stepResults, pathsTraitSets, traitSets});
   return character;
 }
 const CharacterItem = ({firestore, item}) => {
@@ -243,7 +243,7 @@ const CharacterAsMarkup = ({item, firestore}) => (
 
 const Die = ({die}) => (
   <div>{(
-    die.size === 4
+    die.die === 4
     ? <span>{die.name} d{die.die} {die.description}</span>
     : <span><b>{die.name} d{die.die}</b> {die.description}</span>
   )}</div>
@@ -371,22 +371,25 @@ const StepItem = ({firestore, item, doc}) => {
 const PathListItem = ({firestore, item}) => {
   const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
   const isOpen = isActive(item.id);
-  return (
-    <li style={noShadow}>
-      <div className="collapsible-header" style={{fontWeight:'bold'}}
-        onClick={()=>{ toggleActive(item.id); }} 
-      >
-        { item.attributes.name }
-      </div>
-      <div style={{display:(isOpen ? 'block' : 'none')}}>
+  return ( isOpen
+    ? <React.Fragment>
+        <CortexDiv style={{backgroundColor:'transparent'}}>
+          <h5
+            onClick={()=>{ toggleActive(item.id); }}
+          >{item.attributes.name}</h5>
+        </CortexDiv>
         <Collection
          firestore={firestore}
          collectionName={`${item.path}/steps`}
          CollectionComponent={Div}
          ItemComponent={StepItem}
         />
-      </div>
-    </li>
+      </React.Fragment>
+    : <CortexDiv
+       onClick={()=>{ toggleActive(item.id); }}
+      >
+        <h5>{item.attributes.name}</h5>
+      </CortexDiv>
   )
 }
 
@@ -406,7 +409,7 @@ const GameDoc = ({firestore, doc}) => (
     <Collection
      firestore={firestore}
      collectionName={`${doc.path}/paths`}
-     CollectionComponent={FlatUL}
+     CollectionComponent={Div}
      ItemComponent={PathListItem}
     />
 
