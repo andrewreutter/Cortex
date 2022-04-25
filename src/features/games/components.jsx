@@ -371,25 +371,22 @@ const StepItem = ({firestore, item, doc}) => {
 const PathListItem = ({firestore, item}) => {
   const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
   const isOpen = isActive(item.id);
-  return ( isOpen
-    ? <React.Fragment>
-        <CortexDiv style={{backgroundColor:'transparent'}}>
-          <h5
-            onClick={()=>{ toggleActive(item.id); }}
-          >{item.attributes.name}</h5>
-        </CortexDiv>
-        <Collection
-         firestore={firestore}
-         collectionName={`${item.path}/steps`}
-         CollectionComponent={Div}
-         ItemComponent={StepItem}
-        />
-      </React.Fragment>
-    : <CortexDiv
-       onClick={()=>{ toggleActive(item.id); }}
-      >
-        <h5>{item.attributes.name}</h5>
+  return (
+    <React.Fragment>
+      <CortexDiv style={ isOpen ? {backgroundColor:'transparent'} : {} }>
+        <h5 onClick={()=>{ toggleActive(item.id); }} >
+          {item.attributes.name}
+        </h5>
       </CortexDiv>
+      { !isOpen ? null : 
+        <Collection
+        firestore={firestore}
+        collectionName={`${item.path}/steps`}
+        CollectionComponent={Div}
+        ItemComponent={StepItem}
+        />
+      }
+    </React.Fragment>
   )
 }
 
