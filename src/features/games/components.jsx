@@ -325,6 +325,10 @@ const GrowingTextarea = ({register, name, ...props}) => {
   return <textarea {...registered} onKeyUp={reheight} style={{height:'100%'}} {...props}/>
 }
 
+const PrerequisiteDoc = ({firestore, doc}) => {
+  return <h6>Prerequisite: {doc.attributes.name}</h6>
+}
+
 const StepItem = ({firestore, item, doc}) => {
   item = item || doc;
   const {register, formState, handleSubmit, setFocus, reset} =
@@ -335,18 +339,32 @@ const StepItem = ({firestore, item, doc}) => {
   }
   const {isDirty} = formState
 
-  React.useEffect(
-    ()=>setFocus('name'),
-    [setFocus]
-  )
+  const [isActive, toggleActive] = useTracksActive().slice(1)
+  const isOpen = isActive(item.id);
 
+  // TODO: doesn't seem to work.
+  React.useEffect(
+    ()=>isOpen ? setFocus('name') : undefined,
+    [setFocus, isOpen]
+  );
+
+  //console.log('StepItem', {item});
   return (
-    <CortexDiv style={{marginTop:'1em'}}>
-      <div>
+    <CortexDiv style={{marginTop:'1em'}}>{
+    !isOpen
+    ? <h5 onClick={()=>toggleActive(item.id)}>{item.attributes.name}</h5>
+    : <div>
         <div style={{width:'50%', float:'left', paddingRight:'1em'}}>
-          <h5>
+          <h5 onClick={()=>toggleActive(item.id)}>
             {item.attributes.name}
           </h5>
+          { item.attributes.prerequisite
+            && <Doc
+                firestore={firestore}
+                docPath={item.attributes.prerequisite}
+                DocComponent={PrerequisiteDoc}
+               />
+          }
           <StepMarkup markup={item.attributes.markup}/>
         </div>
         <div style={{width:'50%', float:'left', paddingLeft:'1em'}}>
@@ -364,7 +382,7 @@ const StepItem = ({firestore, item, doc}) => {
         </div>
         <div style={{clear:'both'}}/>
       </div>
-    </CortexDiv>
+    }</CortexDiv>
   )
 };
 
@@ -379,15 +397,16 @@ const PathListItem = ({firestore, item}) => {
           <Button onClick={onDelete} style={{float:'right'}}>Delete</Button>
           {item.attributes.name}
         </h5>
-      </CortexDiv>
       { !isOpen ? null : 
         <Collection
         firestore={firestore}
         collectionName={`${item.path}/steps`}
+        orderBy="name"
         CollectionComponent={Div}
         ItemComponent={StepItem}
         />
       }
+      </CortexDiv>
     </React.Fragment>
   )
 }
@@ -399,10 +418,34 @@ const PathBuilder = ({firestore, collectionName}) => {
     useForm({defaultValues:{numPaths:10}});
 
   const submit = values => { 
-    addDoc(col, {name:values.name})
+    const {name, numPaths} = values;
+    addDoc(col, {name})
+    .then(newPath=>{
+      if (numPaths) {
+        const newSteps = collection(firestore, `${newPath.path}/steps`);
+        let stepNumber = 1, lastDoc = null;
+        const doOne = () => {
+          if (stepNumber <= numPaths) {
+
+            const newValues = {name:`${name} ${stepNumber}`, markup:''};
+            if (lastDoc) newValues.prerequisite = lastDoc.path;
+            //console.log('doOneXXX', {name, stepNumber, newValues});
+
+            addDoc(newSteps, newValues)
+            .then(newDoc=>{
+              stepNumber += 1;
+              lastDoc = newDoc;
+              doOne();
+            });
+          }
+        };
+        doOne();
+      }
+    });
     reset();
   }
-  const {isDirty} = formState
+  const {isValid, isDirty} = formState
+  //console.log('PBXXX', {isValid, isDirty});
 
   /*
   React.useEffect(
@@ -415,7 +458,7 @@ const PathBuilder = ({firestore, collectionName}) => {
       <input type="submit" value="Create" disabled={!isDirty}/>
       &nbsp; path named &nbsp;
       <InputWrapper inline>
-        <input {...register('name')} type="text" placeholder="Name"/>
+        <input {...register('name', {validate:value => (!!value)})} type="text" placeholder="Name"/>
       </InputWrapper>
       &nbsp; with &nbsp;
       <InputWrapper inline>
