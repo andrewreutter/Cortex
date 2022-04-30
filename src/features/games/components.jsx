@@ -3,10 +3,10 @@ import {useState, useMemo, useEffect} from 'react'
 import {compose} from 'recompose'
 import {Link} from "react-router-dom"
 import {useForm} from "react-hook-form";
-import {collection, getDoc, doc} from 'firebase/firestore';
+import {collection, addDoc, getDoc, doc} from 'firebase/firestore';
 
 import {InputWrapper} from '../../core-lib/ui/forms/components.jsx'
-import {UL, Span, Div, P} from '../../core-lib/utils/components.jsx'
+import {Button, UL, Span, Div, P} from '../../core-lib/utils/components.jsx'
 import {useTracksActive} from '../../core-lib/ui/hooks.jsx'
 import {Card} from '../../core-lib/ui/cards/components.jsx'
 import {Collection, Doc} from '../../core-lib/firebase/firestore/components.jsx'
@@ -371,10 +371,12 @@ const StepItem = ({firestore, item, doc}) => {
 const PathListItem = ({firestore, item}) => {
   const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
   const isOpen = isActive(item.id);
+  const onDelete = () => window.confirm('Are you sure?') ? item.deleteDoc() : true;
   return (
     <React.Fragment>
       <CortexDiv style={ isOpen ? {backgroundColor:'transparent'} : {} }>
         <h5 onClick={()=>{ toggleActive(item.id); }} >
+          <Button onClick={onDelete} style={{float:'right'}}>Delete</Button>
           {item.attributes.name}
         </h5>
       </CortexDiv>
@@ -387,6 +389,42 @@ const PathListItem = ({firestore, item}) => {
         />
       }
     </React.Fragment>
+  )
+}
+const PathBuilder = ({firestore, collectionName}) => {
+  //const {response:steps, ready} = useCollectionData(firestore, collectionName);
+  const col = collection(firestore, collectionName);
+
+  const {register, formState, handleSubmit, setFocus, reset} =
+    useForm({defaultValues:{numPaths:10}});
+
+  const submit = values => { 
+    addDoc(col, {name:values.name})
+    reset();
+  }
+  const {isDirty} = formState
+
+  /*
+  React.useEffect(
+    ()=>setFocus('name'),
+    [setFocus]
+  )
+  */
+  return (
+    <form onSubmit={handleSubmit(submit)}>
+      <input type="submit" value="Create" disabled={!isDirty}/>
+      &nbsp; path named &nbsp;
+      <InputWrapper inline>
+        <input {...register('name')} type="text" placeholder="Name"/>
+      </InputWrapper>
+      &nbsp; with &nbsp;
+      <InputWrapper inline>
+        <input {...register('numPaths')} type="number" placeholder=""
+         style={{width:'2em'}}
+        />
+      </InputWrapper>
+      &nbsp; steps.
+    </form>
   )
 }
 
@@ -403,6 +441,10 @@ const GameDoc = ({firestore, doc}) => (
     />
 
     <h4>Paths</h4>
+    <PathBuilder
+     firestore={firestore}
+     collectionName={`${doc.path}/paths`}
+    />
     <Collection
      firestore={firestore}
      collectionName={`${doc.path}/paths`}
