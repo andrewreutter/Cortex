@@ -1,5 +1,5 @@
 import {useState, useMemo, useEffect} from 'react'
-import { getFirestore, collection, collectionGroup, doc, getDoc, deleteDoc, setDoc, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import {getFirestore, collection, collectionGroup, doc, deleteDoc, setDoc, onSnapshot, query, orderBy} from 'firebase/firestore';
 import {
   useCollectionData as fbUseCollectionData,
   useDocumentData as fbUseDocData
@@ -61,7 +61,7 @@ const useDocsData = (firestore, docPaths) => {
       unsubscribes.map(unsubscribe=>unsubscribe());
       setResults(noResults);
     };
-  }, [docPaths]);
+  }, [firestore, noResults, docPaths]);
   return results;
 }
 

@@ -1,18 +1,19 @@
 import React from 'react'
-import {useState, useMemo, useEffect} from 'react'
 import {compose} from 'recompose'
 import {Link} from "react-router-dom"
 import {useForm} from "react-hook-form";
-import {where, collection, addDoc, getDoc, doc} from 'firebase/firestore';
+import {collection, addDoc} from 'firebase/firestore';
 
 import {InputWrapper} from '../../core-lib/ui/forms/components.jsx'
-import {Button, UL, Span, Div, P} from '../../core-lib/utils/components.jsx'
+import {Button, UL, Span, Div} from '../../core-lib/utils/components.jsx'
 import {useTracksActive} from '../../core-lib/ui/hooks.jsx'
 import {Card} from '../../core-lib/ui/cards/components.jsx'
 import {Collection, Doc} from '../../core-lib/firebase/firestore/components.jsx'
-import {postConverter, useDocData, useDocsData, useCollectionData} from '../../core-lib/firebase/firestore/hooks.jsx'
 // import {logsRender} from '../../core-lib/utils/higher-order.jsx'
 import {addsStyle, addsClassNames} from '../../core-lib/utils/higher-order.jsx'
+import {useDocData} from '../../core-lib/firebase/firestore/hooks.jsx'
+
+import {useCharacterBuilder, useTraitSetsFromMarkup} from './hooks.jsx'
 
 const noShadow = {boxShadow:'none', border:'none'};
 const FlatUL = compose(
@@ -47,134 +48,8 @@ const CortexDiv = compose(
   })
 )(Card)
 
-const DieItem = ({firestore, item}) => (
-  <div>{
-    item.attributes.die === 4
-    ? <span>{item.attributes.name} d{item.attributes.die}</span>
-    : <b>{item.attributes.name} d{item.attributes.die}</b>
-  }</div>
-)
-const LimitItem = ({firestore, item}) => (
-  <span>
-    <b>Limit:</b> <i>{item.attributes.name}</i>. {item.attributes.description}
-  </span>
-)
-const TraitSetItem = ({firestore, item}) => (
-  <CortexDiv style={{marginTop:'1em'}}>
-    <h6><u><b>{item.attributes.name}</b></u></h6>
-    <Collection
-     firestore={firestore}
-     collectionName={`${item.path}/dice`}
-     orderBy={ item.attributes.name === 'Ability Scores' ? 'order' : 'name' }
-     CollectionComponent={Div}
-     ItemComponent={DieItem}
-    />
-    <Collection
-     firestore={firestore}
-     collectionName={`${item.path}/limits`}
-     CollectionComponent={P}
-     ItemComponent={LimitItem}
-    />
-  </CortexDiv>
-)
-const CharacterStepItem = ({firestore, item}) => {
-  return <CortexDiv>
-    <Doc
-     firestore={firestore}
-     docPath={item.attributes.stepRef.path}
-     DocComponent={StepItem}
-    />
-  </CortexDiv>
-}
-
-const useCharacterSteps = (firestore, item) => {
-  return useCollectionData(firestore, `${item.path}/steps`);
-}
-const useCharacterStepPaths = (firestore, item) => {
-  const {response:steps, ready} = useCharacterSteps(firestore, item);
-  const stepPaths = useMemo(
-    () => ready ? steps.map(step=>step.attributes.stepRef.path) : [],
-    [ready, steps]
-  );
-  return stepPaths;
-}
-const useTraitSetsFromItemsWithMarkup = (itemsWithMarkup) => {
-  return useMemo(
-    () => (//console.log('uTSfIWM', {itemsWithMarkup}),
-      !itemsWithMarkup
-      ? []
-      : itemsWithMarkup.map(
-          item => markupToTraitSets(item.attributes.markup)
-        ).flat()
-    ),
-    [itemsWithMarkup]
-  );
-}
-
-const useMergeTraitSets = traitSets => useMemo(
-  () => {
-    const mergedTraitSets = [], keyedTraitSets = {};
-      traitSets.forEach(traitSet => {
-        const traitSetName = traitSet.name;
-        let targetTraitSet = keyedTraitSets[traitSetName];
-        if (!targetTraitSet) {
-          targetTraitSet = {name: traitSetName, dice:[], limits:[], sfx:[], notes:[]};
-          mergedTraitSets.push(targetTraitSet);
-          keyedTraitSets[traitSetName] = targetTraitSet;
-        }
-
-        const keyedDice = {};
-        targetTraitSet.dice.forEach(die => {
-          keyedDice[die.name] = die;
-        });
-        traitSet.dice.forEach(die => {
-          const currentDie = keyedDice[die.name];
-          if (currentDie) {
-            if (die.die > currentDie.die)
-              Object.assign(currentDie, die)
-          } else {
-            targetTraitSet.dice.push({...die})
-          }
-        });
-
-        traitSet.limits.forEach(die => targetTraitSet.limits.push({...die}));
-        traitSet.sfx.forEach(die => targetTraitSet.sfx.push({...die}));
-        traitSet.notes.forEach(note => targetTraitSet.notes.push(note));
-      });
-    return mergedTraitSets;
-  },
-  [traitSets]
-);
-
-const useAvailableSteps = (firestore, stepPaths) => {
-  // XXX TODO: finish making a list of available steps work.
-  const noSteps = useMemo(()=>[]);
-  const {error, fetching, ready, response} = 
-    useCollectionData(firestore, 'steps', {
-      isGroup:true,
-      //orderBy:'name',
-      where: stepPaths.length ? where('prerequisite', 'in', stepPaths) : null,
-    });
-  //console.log('uAS - useAvailableSteps', stepPaths, ready ? response : noSteps);
-  return ready ? response : noSteps;
-}
-
-/* Take a character doc and elaborate it. */
-const useCharacterBuilder = (firestore, item) => {
-
-  const stepPaths = useCharacterStepPaths(firestore, item);
-  const stepDocs = useDocsData(firestore, stepPaths);
-  const traitSets = useTraitSetsFromItemsWithMarkup(stepDocs);
-  const mergedTraitSets = useMergeTraitSets(traitSets);
-  const availableSteps = useAvailableSteps(firestore, stepPaths);
-
-  const character = {...item, traitSets:mergedTraitSets, availableSteps, stepPaths, stepDocs};
-  //console.log('ucbXXX', {character, stepPaths, stepDocs, traitSets, mergedTraitSets});
-  return character;
-}
 const CharacterItem = ({firestore, item}) => {
   const character = useCharacterBuilder(firestore, item);
-  const {response:characterSteps} = useCharacterSteps(firestore, item);
 
   const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
   const isOpen = isActive(item.id);
@@ -183,8 +58,8 @@ const CharacterItem = ({firestore, item}) => {
   const addStep = availableStep => {
     if (character.stepPaths.includes(availableStep.path)) {
       // XXX TODO: bug here that requires refreshing; probably in useDocsData()
-      characterSteps.forEach(characterStep=>{
-        if (characterStep.attributes.stepRef.path == availableStep.path) 
+      character.characterSteps.forEach(characterStep=>{
+        if (characterStep.attributes.stepRef.path === availableStep.path) 
           characterStep.deleteDoc();
       })
     } else {
@@ -300,52 +175,15 @@ const TraitSet = ({traitSet}) => (
 )
 
 const StepMarkup = ({markup}) => {
+  const traitSets = useTraitSetsFromMarkup(markup);
   return (
     <div>
-      { markupToTraitSets(markup).map((traitSet, idx)=>(
+      { traitSets.map((traitSet, idx)=>(
           <TraitSet key={idx} traitSet={traitSet}/>
         ))
       }
     </div>
   )
-}
-
-const markupToTraitSets = markup => {
-  const parseSFXOrLimit = (rest, target) => {
-    const itemStr = rest.join(':');
-    const [sloppyName, ...descriptionChunks] = itemStr.split('.');
-    target.push({
-      name: sloppyName.trim(),
-      description: descriptionChunks.join('.').trim()
-    });
-  }
-  const traitSetChunks = markup ? markup.split('\n\n') : [];
-  const traitSets = traitSetChunks.map(
-    traitSetChunk => {
-      const traitSetLines = traitSetChunk.split('\n').map(s=>s.trim());
-      const [name, ...rest] = traitSetLines;
-      const dice=[], limits=[], sfx=[], notes=[]
-      rest.forEach(line => {
-        const [lineType, ...rest] = line.split(':');
-        if (lineType === 'Limit') { parseSFXOrLimit(rest, limits) }
-        else if (lineType === 'SFX') { parseSFXOrLimit(rest, sfx) }
-        else {
-          const dieSplits = line.split(/ (d(4|6|8|10|12))/);
-          if (dieSplits.length === 1) 
-            notes.push(line)
-          else  {
-            dice.push({
-              name: dieSplits[0],
-              die: parseInt(dieSplits[1].slice(1)),
-              description: dieSplits.slice(3).join('')
-            });
-          }
-        }
-      })
-      return { name, dice, limits, sfx, notes }
-    }
-  );
-  return traitSets;
 }
 
 const GrowingTextarea = ({register, name, ...props}) => {
@@ -484,8 +322,7 @@ const PathCreator = ({firestore, gameDoc}) => {
     });
     reset();
   }
-  const {isValid, isDirty} = formState
-  //console.log('PBXXX', {isValid, isDirty});
+  const {isDirty} = formState
 
   React.useEffect(
     ()=>isOpen ? setFocus('name') : undefined,
@@ -513,11 +350,6 @@ const PathCreator = ({firestore, gameDoc}) => {
     }
     </form>
   );
-  return (
-    <form onSubmit={handleSubmit(submit)}>
-      <input type="submit" value="Create" disabled={!isDirty}/>
-    </form>
-  )
 }
 const useAverageJamie = firestore => {
   const {response:averageJamie} = useDocData(firestore, '/games/IYbx9XbB9eqiAWjUjR3O/paths/N4JveLQK2EET9Qk2llZC/steps/JCxZvSJEKlJhafiSsDv9');
@@ -545,12 +377,11 @@ const CharacterCreator = ({firestore, gameDoc}) => {
     });
     reset();
   }
-  const {isValid, isDirty} = formState
-  //console.log('PBXXX', {isValid, isDirty});
+  const {isDirty} = formState
 
   React.useEffect(
     ()=>isOpen ? setFocus('name'): undefined,
-    [setFocus, isActive]
+    [setFocus, isOpen]
   )
   return (
     <form onSubmit={handleSubmit(submit)}>
