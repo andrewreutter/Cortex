@@ -38,33 +38,29 @@ const useDocData = (firestore, docPath) => {
   const [value, loading, error] = fbUseDocData(
     doc(firestore, docPath).withConverter(postConverter)
   )
-  //console.log('uCDXXX', {value, firestore, collectionName})
   return {response:value, ready:!loading, fetching:loading, error}
 }
 
 const useDocsData = (firestore, docPaths) => {
   const noResults = useMemo(()=>[], []);
-  const defaultInternalResults = useMemo(
-    () => Array(docPaths.length).fill(0),
-    [docPaths]
-  );
-
-  const [internalResults, setInternalResults] = useState(defaultInternalResults);
   const [results, setResults] = useState(noResults);
 
-  const onSnap = (snap, idx) => {
-    const newInternalResults = [].concat(internalResults);
-    setInternalResults(newInternalResults)
-    newInternalResults[idx] = snap.data();
-    if (!newInternalResults.includes(0)) setResults(newInternalResults);
-  };
 
   useEffect(()=>{
+    let allDocData = Array(docPaths.length).fill(0);
+    const onSnap = (snap, idx) => {
+      allDocData = [].concat(allDocData);
+      allDocData[idx] = snap.data();
+      setResults(allDocData.includes(0) ? noResults : allDocData)
+    };
     const unsubscribes = docPaths.map((docPath, idx) => {
-      const stepDoc = doc(firestore, docPath).withConverter(postConverter);
-      return onSnapshot(stepDoc, {next:snap=>onSnap(snap, idx)});
+      const thisDoc = doc(firestore, docPath).withConverter(postConverter);
+      return onSnapshot(thisDoc, {next:snap=>onSnap(snap, idx)});
     });
-    return () => unsubscribes.map(unsubscribe=>unsubscribe());
+    return () => {
+      unsubscribes.map(unsubscribe=>unsubscribe());
+      setResults(noResults);
+    };
   }, [docPaths]);
   return results;
 }
