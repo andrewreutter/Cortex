@@ -1,5 +1,5 @@
-import {useMemo} from 'react'
-import { getFirestore, collection, collectionGroup, doc, deleteDoc, setDoc, query, orderBy, where } from 'firebase/firestore';
+import {useState, useMemo, useEffect} from 'react'
+import { getFirestore, collection, collectionGroup, doc, getDoc, deleteDoc, setDoc, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import {
   useCollectionData as fbUseCollectionData,
   useDocumentData as fbUseDocData
@@ -42,6 +42,32 @@ const useDocData = (firestore, docPath) => {
   return {response:value, ready:!loading, fetching:loading, error}
 }
 
+const useDocsData = (firestore, docPaths) => {
+  const noResults = useMemo(()=>[], []);
+  const defaultInternalResults = useMemo(
+    () => Array(docPaths.length).fill(0),
+    [docPaths]
+  );
+
+  const [internalResults, setInternalResults] = useState(defaultInternalResults);
+  const [results, setResults] = useState(noResults);
+
+  const onSnap = (snap, idx) => {
+    const newInternalResults = [].concat(internalResults);
+    setInternalResults(newInternalResults)
+    newInternalResults[idx] = snap.data();
+    if (!newInternalResults.includes(0)) setResults(newInternalResults);
+  };
+
+  useEffect(()=>{
+    docPaths.map((docPath, idx) => {
+      const stepDoc = doc(firestore, docPath).withConverter(postConverter);
+      onSnapshot(stepDoc, {next:snap=>onSnap(snap, idx)});
+    });
+  }, [docPaths]);
+  return results;
+}
+
 const useCollectionData = (firestore, collectionName, {isGroup, orderBy:myOrderBy, where:myWhere}={}) => {
   const makeCol = isGroup ? collectionGroup : collection;
   let coll = makeCol(firestore, collectionName).withConverter(postConverter)
@@ -64,4 +90,4 @@ const useCollectionData = (firestore, collectionName, {isGroup, orderBy:myOrderB
   return {response:value, ready:!loading, fetching:loading, error}
 }
 
-export {useFirestore, useCollectionData, useDocData, postConverter}
+export {useFirestore, useCollectionData, useDocData, useDocsData, postConverter}
