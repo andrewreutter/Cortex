@@ -87,8 +87,11 @@ const CharacterStepItem = ({firestore, item}) => {
   </CortexDiv>
 }
 
+const useCharacterSteps = (firestore, item) => {
+  return useCollectionData(firestore, `${item.path}/steps`);
+}
 const useCharacterStepPaths = (firestore, item) => {
-  const {response:steps, ready} = useCollectionData(firestore, `${item.path}/steps`);
+  const {response:steps, ready} = useCharacterSteps(firestore, item);
   const stepPaths = useMemo(
     () => ready ? steps.map(step=>step.attributes.stepRef.path) : [],
     [ready, steps]
@@ -97,7 +100,7 @@ const useCharacterStepPaths = (firestore, item) => {
 }
 const useTraitSetsFromItemsWithMarkup = (itemsWithMarkup) => {
   return useMemo(
-    () => (//console.log('uTSfIWMXXX', {itemsWithMarkup}),
+    () => (//console.log('uTSfIWM', {itemsWithMarkup}),
       !itemsWithMarkup
       ? []
       : itemsWithMarkup.map(
@@ -143,6 +146,19 @@ const useMergeTraitSets = traitSets => useMemo(
   [traitSets]
 );
 
+const useAvailableSteps = (firestore, stepPaths) => {
+  // XXX TODO: finish making a list of available steps work.
+  const noSteps = useMemo(()=>[]);
+  const {error, fetching, ready, response} = 
+    useCollectionData(firestore, 'steps', {
+      isGroup:true,
+      //orderBy:'name',
+      where: stepPaths.length ? where('prerequisite', 'in', stepPaths) : null,
+    });
+  //console.log('uAS - useAvailableSteps', stepPaths, ready ? response : noSteps);
+  return ready ? response : noSteps;
+}
+
 /* Take a character doc and elaborate it. */
 const useCharacterBuilder = (firestore, item) => {
 
@@ -150,28 +166,54 @@ const useCharacterBuilder = (firestore, item) => {
   const stepDocs = useDocsData(firestore, stepPaths);
   const traitSets = useTraitSetsFromItemsWithMarkup(stepDocs);
   const mergedTraitSets = useMergeTraitSets(traitSets);
+  const availableSteps = useAvailableSteps(firestore, stepPaths);
 
-  // XXX TODO: finish making a list of available steps work.
-  const availableSteps = useCollectionData(firestore, 'steps', {
-    isGroup:true,
-    where: stepPaths.length ? where('prerequisite', 'in', stepPaths) : null,
-  });
-
-  const character = {...item, traitSets:mergedTraitSets, availableSteps};
+  const character = {...item, traitSets:mergedTraitSets, availableSteps, stepPaths, stepDocs};
   //console.log('ucbXXX', {character, stepPaths, stepDocs, traitSets, mergedTraitSets});
   return character;
 }
 const CharacterItem = ({firestore, item}) => {
   const character = useCharacterBuilder(firestore, item);
+  const {response:characterSteps} = useCharacterSteps(firestore, item);
+
   const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
   const isOpen = isActive(item.id);
+
   const onDelete = () => window.confirm('Are you sure?') ? item.deleteDoc() : true;
+  const addStep = availableStep => {
+    if (character.stepPaths.includes(availableStep.path)) {
+      // XXX TODO: bug here that requires refreshing; probably in useDocsData()
+      characterSteps.forEach(characterStep=>{
+        if (characterStep.attributes.stepRef.path == availableStep.path) 
+          characterStep.deleteDoc();
+      })
+    } else {
+      const newSteps = collection(firestore, `${item.path}/steps`);
+      addDoc(newSteps, {stepRef:availableStep.ref});
+    }
+  }
+
   return <CortexDiv style={{marginTop:'1em'}}>
     <h5 onClick={()=>{ toggleActive(item.id); }} >
       <Button onClick={onDelete} style={{float:'right'}}>Delete</Button>
       {item.attributes.name}
     </h5>
     <div style={{display:(isOpen ? 'block' : 'none')}}>
+      <div style={{float:'right'}}>
+        { character.availableSteps.map((availableStep, idx) => (
+            <div key={idx}>
+              <Button style={{marginTop:'1em'}} onClick={()=>addStep(availableStep)}>
+                { character.stepPaths.includes(availableStep.path)
+                  ? <span>-</span>
+                  : <span>+</span>
+                }
+                &nbsp;
+                {availableStep.attributes.name}
+              </Button>
+            </div>
+          ))
+        }
+      </div>
       { character.traitSets.map((traitSet, idx)=>(
           <TraitSet key={idx} traitSet={traitSet}/>
         ))
@@ -412,13 +454,16 @@ const PathCreator = ({firestore, gameDoc}) => {
   const {register, formState, handleSubmit, setFocus, reset} =
     useForm({defaultValues:{numPaths:10}});
 
+  const averageJamie = useAverageJamie(firestore);
+  //console.log('pcXXX', averageJamie && averageJamie.path);
+
   const submit = values => { 
     const {name, numPaths} = values;
     addDoc(col, {name})
     .then(newPath=>{
       if (numPaths) {
         const newSteps = collection(firestore, `${newPath.path}/steps`);
-        let stepNumber = 1, lastDoc = null;
+        let stepNumber = 1, lastDoc = {path:averageJamie.path};
         const doOne = () => {
           if (stepNumber <= numPaths) {
 
@@ -474,6 +519,11 @@ const PathCreator = ({firestore, gameDoc}) => {
     </form>
   )
 }
+const useAverageJamie = firestore => {
+  const {response:averageJamie} = useDocData(firestore, '/games/IYbx9XbB9eqiAWjUjR3O/paths/N4JveLQK2EET9Qk2llZC/steps/JCxZvSJEKlJhafiSsDv9');
+  // XXX TODO: put averageJamie data somewhere better.
+  return averageJamie
+}
 const CharacterCreator = ({firestore, gameDoc}) => {
   const [isActive, toggleActive] = useTracksActive().slice(1)
   const isOpen = isActive(gameDoc.key);
@@ -484,8 +534,7 @@ const CharacterCreator = ({firestore, gameDoc}) => {
   const {register, formState, handleSubmit, setFocus, reset} =
     useForm({defaultValues:{}});
 
-  const {response:averageJamie} = useDocData(firestore, '/games/IYbx9XbB9eqiAWjUjR3O/paths/N4JveLQK2EET9Qk2llZC/steps/JCxZvSJEKlJhafiSsDv9');
-  // XXX TODO: put averageJamie data somewhere better.
+  const averageJamie = useAverageJamie(firestore);
 
   const submit = values => { 
     const {name} = values;

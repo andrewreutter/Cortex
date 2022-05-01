@@ -60,10 +60,11 @@ const useDocsData = (firestore, docPaths) => {
   };
 
   useEffect(()=>{
-    docPaths.map((docPath, idx) => {
+    const unsubscribes = docPaths.map((docPath, idx) => {
       const stepDoc = doc(firestore, docPath).withConverter(postConverter);
-      onSnapshot(stepDoc, {next:snap=>onSnap(snap, idx)});
+      return onSnapshot(stepDoc, {next:snap=>onSnap(snap, idx)});
     });
+    return () => unsubscribes.map(unsubscribe=>unsubscribe());
   }, [docPaths]);
   return results;
 }
@@ -73,20 +74,9 @@ const useCollectionData = (firestore, collectionName, {isGroup, orderBy:myOrderB
   let coll = makeCol(firestore, collectionName).withConverter(postConverter)
   if (myOrderBy) coll = query(coll, orderBy(myOrderBy));
   if (myWhere) coll = query(coll, myWhere);
-  /*
-  if (myOrderBy && myWhere) {
-    coll = query(coll, orderBy(myOrderBy), where(myWhere))
-  }
-  else if (myOrderBy) {
-    coll = query(coll, orderBy(myOrderBy))
-  }
-  else if (myWhere) {
-    coll = query(coll, where(myWhere))
-  }
-  */
 
   const [value, loading, error] = fbUseCollectionData(coll)
-  //console.log('uCDXXX', {value, firestore, collectionName})
+  //console.log('uCD', {value, firestore, collectionName})
   return {response:value, ready:!loading, fetching:loading, error}
 }
 
