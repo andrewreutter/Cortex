@@ -3,7 +3,7 @@ import {useState, useMemo, useEffect} from 'react'
 import {compose} from 'recompose'
 import {Link} from "react-router-dom"
 import {useForm} from "react-hook-form";
-import {collection, addDoc, getDoc, doc} from 'firebase/firestore';
+import {where, collection, addDoc, getDoc, doc} from 'firebase/firestore';
 
 import {InputWrapper} from '../../core-lib/ui/forms/components.jsx'
 import {Button, UL, Span, Div, P} from '../../core-lib/utils/components.jsx'
@@ -122,6 +122,11 @@ const useCharacterBuilder = (firestore, item) => {
     [stepResults]
   );
 
+  const stepPathPaths = useMemo(
+    () => (!stepResults ? [] : stepResults.map(path => path.path)),
+    [stepResults]
+  );
+
   const traitSets = useMemo(
     () => {
       const mergedTraitSets = [], keyedTraitSets = {};
@@ -159,8 +164,14 @@ const useCharacterBuilder = (firestore, item) => {
     [pathsTraitSets]
   );
 
-  const character = {...item, traitSets};
-  //console.log('ucbXXX', {character, stepPaths, stepResults, pathsTraitSets, traitSets});
+  // TODO: finish making a list of available steps work.
+  const availableSteps = useCollectionData(firestore, 'steps', {
+    isGroup:true,
+    where: stepPathPaths.length ? where('prerequisite', 'in', stepPathPaths) : null,
+  });
+
+  const character = {...item, traitSets, availableSteps};
+  console.log('ucbXXX', {character, stepPathPaths, stepPaths, stepResults, pathsTraitSets, traitSets});
   return character;
 }
 const CharacterItem = ({firestore, item}) => {
@@ -173,7 +184,7 @@ const CharacterItem = ({firestore, item}) => {
     </h5>
     <div style={{display:(isOpen ? 'block' : 'none')}}>
       {character.traitSets.map(
-        traitSet => <CortexDiv key={traitSet.name} style={{marginTop:'1em'}}>
+        traitSet => <div key={traitSet.name} style={{marginTop:'1em'}}>
           <h6><u><b>{traitSet.name}</b></u></h6>
           {traitSet.dice.map(
             (die, idx) => <DieItem key={idx} item={{attributes:die}}/>
@@ -184,7 +195,7 @@ const CharacterItem = ({firestore, item}) => {
           {traitSet.sfx.map(
             (die, idx) => <SFXOrLimit key={idx} category="SFX" item={die}/>
           )}
-        </CortexDiv>
+        </div>
       )}
     </div>
   </CortexDiv>
@@ -257,12 +268,12 @@ const SFXOrLimit = ({category, item}) => (
 
 // XXX TODO: notes!
 const TraitSet = ({traitSet}) => (
-  <CortexDiv style={{marginBottom:'1em'}}>
+  <div style={{marginBottom:'1em'}}>
     <h6><b><u>{traitSet.name}</u></b></h6>
     <div>{traitSet.dice.map((die, idx)=><Die key={idx} die={die}/>)}</div>
     <div>{traitSet.limits.map((item, idx)=><SFXOrLimit key={idx} category="Limit" item={item}/>)}</div>
     <div>{traitSet.sfx.map((item, idx)=><SFXOrLimit key={idx} category="SFX" item={item}/>)}</div>
-  </CortexDiv>
+  </div>
 )
 
 const StepMarkup = ({markup}) => {

@@ -1,5 +1,5 @@
 import {useMemo} from 'react'
-import { getFirestore, collection, doc, deleteDoc, setDoc, query, orderBy, where } from 'firebase/firestore';
+import { getFirestore, collection, collectionGroup, doc, deleteDoc, setDoc, query, orderBy, where } from 'firebase/firestore';
 import {
   useCollectionData as fbUseCollectionData,
   useDocumentData as fbUseDocData
@@ -42,8 +42,12 @@ const useDocData = (firestore, docPath) => {
   return {response:value, ready:!loading, fetching:loading, error}
 }
 
-const useCollectionData = (firestore, collectionName, {orderBy:myOrderBy, where:myWhere}={}) => {
-  let coll = collection(firestore, collectionName).withConverter(postConverter)
+const useCollectionData = (firestore, collectionName, {isGroup, orderBy:myOrderBy, where:myWhere}={}) => {
+  const makeCol = isGroup ? collectionGroup : collection;
+  let coll = makeCol(firestore, collectionName).withConverter(postConverter)
+  if (myOrderBy) coll = query(coll, orderBy(myOrderBy));
+  if (myWhere) coll = query(coll, myWhere);
+  /*
   if (myOrderBy && myWhere) {
     coll = query(coll, orderBy(myOrderBy), where(myWhere))
   }
@@ -53,6 +57,7 @@ const useCollectionData = (firestore, collectionName, {orderBy:myOrderBy, where:
   else if (myWhere) {
     coll = query(coll, where(myWhere))
   }
+  */
 
   const [value, loading, error] = fbUseCollectionData(coll)
   //console.log('uCDXXX', {value, firestore, collectionName})
