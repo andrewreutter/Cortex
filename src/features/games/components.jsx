@@ -421,8 +421,11 @@ const PathListItem = ({firestore, item}) => {
     </React.Fragment>
   )
 }
-const PathBuilder = ({firestore, collectionName}) => {
-  //const {response:steps, ready} = useCollectionData(firestore, collectionName);
+const PathCreator = ({firestore, gameDoc}) => {
+  const [isActive, toggleActive] = useTracksActive().slice(1)
+  const isOpen = isActive(gameDoc.key);
+
+  const collectionName=`${gameDoc.path}/paths`;
   const col = collection(firestore, collectionName);
 
   const {register, formState, handleSubmit, setFocus, reset} =
@@ -458,35 +461,98 @@ const PathBuilder = ({firestore, collectionName}) => {
   const {isValid, isDirty} = formState
   //console.log('PBXXX', {isValid, isDirty});
 
-  /*
   React.useEffect(
-    ()=>setFocus('name'),
-    [setFocus]
+    ()=>isOpen ? setFocus('name') : undefined,
+    [setFocus, isOpen]
   )
-  */
+  return (
+    <form onSubmit={handleSubmit(submit)}>
+    { !isOpen
+      ? <Button style={{marginTop:'2rem'}} onClick={()=>toggleActive(gameDoc.key)}>Create</Button>
+      : <React.Fragment>
+          <span>Create path named </span>
+          <InputWrapper inline>
+            <input {...register('name', {validate:value => (!!value)})} type="text" placeholder="Name"/>
+          </InputWrapper>
+          &nbsp; with &nbsp;
+          <InputWrapper inline>
+            <input {...register('numPaths')} type="number" placeholder=""
+             style={{width:'2em'}}
+            />
+          </InputWrapper>
+          &nbsp; steps. &nbsp;
+          <input type="submit" value="Create" disabled={!isDirty}/>
+          <Button onClick={()=>toggleActive(gameDoc.key)}>Cancel</Button>
+        </React.Fragment>
+    }
+    </form>
+  );
   return (
     <form onSubmit={handleSubmit(submit)}>
       <input type="submit" value="Create" disabled={!isDirty}/>
-      &nbsp; path named &nbsp;
-      <InputWrapper inline>
-        <input {...register('name', {validate:value => (!!value)})} type="text" placeholder="Name"/>
-      </InputWrapper>
-      &nbsp; with &nbsp;
-      <InputWrapper inline>
-        <input {...register('numPaths')} type="number" placeholder=""
-         style={{width:'2em'}}
-        />
-      </InputWrapper>
-      &nbsp; steps.
     </form>
   )
+}
+const CharacterCreator = ({firestore, gameDoc}) => {
+  const [isActive, toggleActive] = useTracksActive().slice(1)
+  const isOpen = isActive(gameDoc.key);
+
+  const collectionName=`${gameDoc.path}/characters`;
+  const col = collection(firestore, collectionName);
+
+  const {register, formState, handleSubmit, setFocus, reset} =
+    useForm({defaultValues:{}});
+
+  const {response:averageJamie} = useDocData(firestore, '/games/IYbx9XbB9eqiAWjUjR3O/paths/N4JveLQK2EET9Qk2llZC/steps/JCxZvSJEKlJhafiSsDv9');
+  // XXX TODO: put averageJamie data somewhere better.
+  console.log({averageJamie})
+
+  const submit = values => { 
+    const {name} = values;
+    addDoc(col, {name})
+    .then(newCharacter=>{
+      const newSteps = collection(firestore, `${newCharacter.path}/steps`);
+      addDoc(newSteps, {stepRef:averageJamie.ref});
+    });
+    reset();
+  }
+  const {isValid, isDirty} = formState
+  //console.log('PBXXX', {isValid, isDirty});
+
+  React.useEffect(
+    ()=>isOpen ? setFocus('name'): undefined,
+    [setFocus, isActive]
+  )
+  return (
+    <form onSubmit={handleSubmit(submit)}>
+    { !isOpen
+      ? <Button style={{marginTop:'2rem'}} onClick={()=>toggleActive(gameDoc.key)}>Create</Button>
+      : <React.Fragment>
+          <span>Create character named </span>
+          <InputWrapper inline>
+            <input {...register('name', {validate:value => (!!value)})} type="text" placeholder="Name"/>
+          </InputWrapper>
+          <input type="submit" value="Create" disabled={!isDirty}/>
+          <Button onClick={()=>toggleActive(gameDoc.key)}>Cancel</Button>
+        </React.Fragment>
+    }
+    </form>
+  );
 }
 
 const GameDoc = ({firestore, doc}) => (
   <div style={{padding:'0 2em 2em'}}>
     <h3>{doc.attributes.name}</h3>
 
-    <h4>Characters</h4>
+    <div style={{float:'right', margin:'-1rem 0 1rem 0'}}>
+      <CharacterCreator
+       firestore={firestore}
+       gameDoc={doc}
+      />
+    </div>
+    <h4>
+      Characters
+    </h4>
     <Collection
      firestore={firestore}
      collectionName={`${doc.path}/characters`}
@@ -494,24 +560,18 @@ const GameDoc = ({firestore, doc}) => (
      ItemComponent={CharacterItem}
     />
 
+    <div style={{float:'right', margin:'-1rem 0 1rem 0'}}>
+      <PathCreator
+       firestore={firestore}
+       gameDoc={doc}
+      />
+    </div>
     <h4>Paths</h4>
-    <PathBuilder
-     firestore={firestore}
-     collectionName={`${doc.path}/paths`}
-    />
     <Collection
      firestore={firestore}
      collectionName={`${doc.path}/paths`}
      CollectionComponent={Div}
      ItemComponent={PathListItem}
-    />
-
-    <h4>Steps</h4>
-    <Collection
-     firestore={firestore}
-     collectionName={`${doc.path}/steps`}
-     CollectionComponent={Div}
-     ItemComponent={StepItem}
     />
   </div>
 )
