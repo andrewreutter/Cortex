@@ -5,15 +5,18 @@ import {useForm} from "react-hook-form";
 import {collection, addDoc} from 'firebase/firestore';
 
 import {InputWrapper} from '../../core-lib/ui/forms/components.jsx'
+import {CardTitle, CardContent} from '../../core-lib/ui/cards/components.jsx'
 import {Button, UL, Span, Div} from '../../core-lib/utils/components.jsx'
 import {useTracksActive} from '../../core-lib/ui/hooks.jsx'
-import {Card} from '../../core-lib/ui/cards/components.jsx'
+import {CortexCard} from '../components.jsx'
 import {Collection, Doc} from '../../core-lib/firebase/firestore/components.jsx'
 // import {logsRender} from '../../core-lib/utils/higher-order.jsx'
 import {addsStyle, addsClassNames} from '../../core-lib/utils/higher-order.jsx'
 import {useDocData} from '../../core-lib/firebase/firestore/hooks.jsx'
 
-import {useCharacterBuilder, useTraitSetsFromMarkup} from './hooks.jsx'
+import {CharacterCard} from '../characters/components.jsx'
+import {TraitSet} from '../trait_sets/components.jsx'
+import {useTraitSetsFromMarkup} from './hooks.jsx'
 
 const noShadow = {boxShadow:'none', border:'none'};
 const FlatUL = compose(
@@ -39,63 +42,6 @@ const GamesRoute = ({firestore}) => (
    ItemComponent={GamesListItem}
   />
 )
-
-const CortexDiv = compose(
-  addsStyle({
-    border:'solid 1px #E1CCAF',
-    padding:'1em',
-    backgroundColor:'#FFFAF4',
-  })
-)(Card)
-
-const CharacterItem = ({firestore, item}) => {
-  const character = useCharacterBuilder(firestore, item);
-
-  const [isActive, toggleActive] = useTracksActive().slice(1) // avoid "unused variable: active" warning
-  const isOpen = isActive(item.id);
-
-  const onDelete = () => window.confirm('Are you sure?') ? item.deleteDoc() : true;
-  const addStep = availableStep => {
-    if (character.stepPaths.includes(availableStep.path)) {
-      // XXX TODO: bug here that requires refreshing; probably in useDocsData()
-      character.characterSteps.forEach(characterStep=>{
-        if (characterStep.attributes.stepRef.path === availableStep.path) 
-          characterStep.deleteDoc();
-      })
-    } else {
-      const newSteps = collection(firestore, `${item.path}/steps`);
-      addDoc(newSteps, {stepRef:availableStep.ref});
-    }
-  }
-
-  return <CortexDiv style={{marginTop:'1em'}}>
-    <h5 onClick={()=>{ toggleActive(item.id); }} >
-      <Button onClick={onDelete} style={{float:'right'}}>Delete</Button>
-      {item.attributes.name}
-    </h5>
-    <div style={{display:(isOpen ? 'block' : 'none')}}>
-      <div style={{float:'right'}}>
-        { character.availableSteps.map((availableStep, idx) => (
-            <div key={idx}>
-              <Button style={{marginTop:'1em'}} onClick={()=>addStep(availableStep)}>
-                { character.stepPaths.includes(availableStep.path)
-                  ? <span>-</span>
-                  : <span>+</span>
-                }
-                &nbsp;
-                {availableStep.attributes.name}
-              </Button>
-            </div>
-          ))
-        }
-      </div>
-      { character.traitSets.map((traitSet, idx)=>(
-          <TraitSet key={idx} traitSet={traitSet}/>
-        ))
-      }
-    </div>
-  </CortexDiv>
-}
 
 const Indent = () => <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
 const LimitAsMarkup = ({item, firestore}) => (
@@ -148,32 +94,6 @@ const CharacterAsMarkup = ({item, firestore}) => (
   </span>
 )
 
-const Die = ({die}) => (
-  <div>{(
-    die.die === 4
-    ? <span>{die.name} d{die.die} {die.description}</span>
-    : <span><b>{die.name} d{die.die}</b> {die.description}</span>
-  )}</div>
-)
-
-const SFXOrLimit = ({category, item}) => (
-  <div>
-    <b>{category}:</b> <i>{item.name}</i>. {item.description}
-  </div>
-)
-const Note = ({note}) => ( <div> <i>Note: {note}</i> </div> )
-
-// XXX TODO: notes!
-const TraitSet = ({traitSet}) => (
-  <div style={{marginBottom:'1em'}}>
-    <h6><b><u>{traitSet.name}</u></b></h6>
-    <div>{traitSet.notes.map((note, idx)=><Note key={idx} note={note}/>)}</div>
-    <div>{traitSet.dice.map((die, idx)=><Die key={idx} die={die}/>)}</div>
-    <div>{traitSet.limits.map((item, idx)=><SFXOrLimit key={idx} category="Limit" item={item}/>)}</div>
-    <div>{traitSet.sfx.map((item, idx)=><SFXOrLimit key={idx} category="SFX" item={item}/>)}</div>
-  </div>
-)
-
 const StepMarkup = ({markup}) => {
   const traitSets = useTraitSetsFromMarkup(markup);
   return (
@@ -222,7 +142,7 @@ const StepItem = ({firestore, item, doc}) => {
 
   //console.log('StepItem', {item});
   return (
-    <CortexDiv style={{marginTop:'1em'}}>{
+    <CortexCard style={{marginTop:'1em'}}>{
     !isOpen
     ? <h5 onClick={()=>toggleActive(item.id)}>{item.attributes.name}</h5>
     : <div>
@@ -254,7 +174,7 @@ const StepItem = ({firestore, item, doc}) => {
         </div>
         <div style={{clear:'both'}}/>
       </div>
-    }</CortexDiv>
+    }</CortexCard>
   )
 };
 
@@ -264,21 +184,25 @@ const PathListItem = ({firestore, item}) => {
   const onDelete = () => window.confirm('Are you sure?') ? item.deleteDoc() : true;
   return (
     <React.Fragment>
-      <CortexDiv style={ isOpen ? {backgroundColor:'transparent'} : {} }>
-        <h5 onClick={()=>{ toggleActive(item.id); }} >
-          <Button onClick={onDelete} style={{float:'right'}}>Delete</Button>
-          {item.attributes.name}
-        </h5>
+      <CortexCard style={ isOpen ? {backgroundColor:'transparent'} : {} }>
+        <CardTitle>
+          <div onClick={()=>{ toggleActive(item.id); }} >
+            <Button onClick={onDelete} style={{float:'right'}}>Delete</Button>
+            {item.attributes.name}
+          </div>
+        </CardTitle>
       { !isOpen ? null : 
-        <Collection
-        firestore={firestore}
-        collectionName={`${item.path}/steps`}
-        orderBy="name"
-        CollectionComponent={Div}
-        ItemComponent={StepItem}
-        />
+        <CardContent>
+          <Collection
+           firestore={firestore}
+           collectionName={`${item.path}/steps`}
+           orderBy="name"
+           CollectionComponent={Div}
+           ItemComponent={StepItem}
+          />
+        </CardContent>
       }
-      </CortexDiv>
+      </CortexCard>
     </React.Fragment>
   )
 }
@@ -418,7 +342,7 @@ const GameDoc = ({firestore, doc}) => (
      firestore={firestore}
      collectionName={`${doc.path}/characters`}
      CollectionComponent={Div}
-     ItemComponent={CharacterItem}
+     ItemComponent={CharacterCard}
     />
 
     <div style={{float:'right', margin:'-1rem 0 1rem 0'}}>
