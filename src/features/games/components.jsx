@@ -142,14 +142,15 @@ const StepItem = ({firestore, item, doc}) => {
 
   //console.log('StepItem', {item});
   return (
-    <CortexCard style={{marginTop:'1em'}}>{
+    <CortexCard style={{marginTop:'1em'}}>
+      <CardTitle onClick={()=>toggleActive(item.id)}>
+        {item.attributes.name}
+      </CardTitle>
+    {
     !isOpen
-    ? <h5 onClick={()=>toggleActive(item.id)}>{item.attributes.name}</h5>
-    : <div>
+    ? null
+    : <CardContent>
         <div style={{width:'50%', float:'left', paddingRight:'1em'}}>
-          <h5 onClick={()=>toggleActive(item.id)}>
-            {item.attributes.name}
-          </h5>
           { item.attributes.prerequisite
             && <Doc
                 firestore={firestore}
@@ -173,7 +174,7 @@ const StepItem = ({firestore, item, doc}) => {
           </form>
         </div>
         <div style={{clear:'both'}}/>
-      </div>
+      </CardContent>
     }</CortexCard>
   )
 };
@@ -187,7 +188,7 @@ const PathListItem = ({firestore, item}) => {
       <CortexCard style={ isOpen ? {backgroundColor:'transparent'} : {} }>
         <CardTitle>
           <div onClick={()=>{ toggleActive(item.id); }} >
-            <Button onClick={onDelete} style={{float:'right'}}>Delete</Button>
+            <Button className="hover" onClick={onDelete} style={{float:'right'}}>Delete</Button>
             {item.attributes.name}
           </div>
         </CardTitle>
@@ -328,36 +329,41 @@ const GameDoc = ({firestore, doc}) => (
   <div style={{padding:'0 2em 2em'}}>
     <h3>{doc.attributes.name}</h3>
 
-    <div style={{float:'right', margin:'-1rem 0 0 0'}}>
-      <CharacterCreator
-       firestore={firestore}
-       gameDoc={doc}
-      />
+    <div className="row">
+      <div className="col s12 m6">
+        <div style={{float:'right', margin:'-1rem 0 0 0'}}>
+          <CharacterCreator
+           firestore={firestore}
+           gameDoc={doc}
+          />
+        </div>
+        <h4>
+          Characters
+        </h4>
+        <div style={{clear:'both'}}/>
+        <Collection
+         firestore={firestore}
+         collectionName={`${doc.path}/characters`}
+         CollectionComponent={Div}
+         ItemComponent={CharacterCard}
+        />
+      </div>
+      <div className="col s12 m6">
+        <div style={{float:'right', margin:'-1rem 0 1rem 0'}}>
+          <PathCreator
+           firestore={firestore}
+           gameDoc={doc}
+          />
+        </div>
+        <h4>Paths</h4>
+        <Collection
+         firestore={firestore}
+         collectionName={`${doc.path}/paths`}
+         CollectionComponent={Div}
+         ItemComponent={PathListItem}
+        />
+      </div>
     </div>
-    <h4>
-      Characters
-    </h4>
-    <div style={{clear:'both'}}/>
-    <Collection
-     firestore={firestore}
-     collectionName={`${doc.path}/characters`}
-     CollectionComponent={Div}
-     ItemComponent={CharacterCard}
-    />
-
-    <div style={{float:'right', margin:'-1rem 0 1rem 0'}}>
-      <PathCreator
-       firestore={firestore}
-       gameDoc={doc}
-      />
-    </div>
-    <h4>Paths</h4>
-    <Collection
-     firestore={firestore}
-     collectionName={`${doc.path}/paths`}
-     CollectionComponent={Div}
-     ItemComponent={PathListItem}
-    />
   </div>
 )
 

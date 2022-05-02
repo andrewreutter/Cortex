@@ -11,3 +11,7 @@ nav {
 [type="checkbox"]+span:not(.lever) { /* override weird materialize.css choice */
   height: 1em !important;
 }
+
+.card { font-size:.8em;}
+.card .hover { display:none; }
+.card:hover .hover { display:inherit; }

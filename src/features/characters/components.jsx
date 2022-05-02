@@ -31,7 +31,7 @@ const CharacterCard = ({firestore, item}) => {
 
   return <CortexCard style={{marginTop:'1em'}}>
     <CardTitle>
-      <Button onClick={onDelete} style={{float:'right'}}>Delete</Button>
+      <Button className="hover" onClick={onDelete} style={{float:'right'}}>Delete</Button>
       <div onClick={()=>{ toggleActive(item.id); }} >
         {item.attributes.name}
       </div>
